@@ -44,7 +44,7 @@ export default function Header() {
   const navLinks = [
     { href: "/common/law-search", label: "Law Search" },
     { href: "/Client", label: "Find Attorney" },
-    { href: "/common/ai-bot", label: "AI Bot" },
+    { href: "/common/AI-ChatBot", label: "AI Bot" },
     { href: "/Client/legal-requests", label: "Legal Requests" },
     { href: "/Client/profile", label: "Profile" }, // Added Profile link
   ];
