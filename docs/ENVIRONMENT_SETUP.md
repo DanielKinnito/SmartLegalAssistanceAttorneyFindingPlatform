@@ -29,12 +29,14 @@ Comma-separated list of host/domain names that the application can serve:
 
 ### PostgreSQL
 
-1. Install PostgreSQL on your machine or use a cloud provider:
-   - [PostgreSQL Downloads](https://www.postgresql.org/download/)
-   - [ElephantSQL](https://www.elephantsql.com/) (Free tier available)
-   - [Supabase](https://supabase.com/) (Free tier available)
+You can either use a local PostgreSQL installation or a cloud provider like Supabase.
 
-2. For local installation:
+#### Option 1: Local PostgreSQL
+
+1. Install PostgreSQL on your machine:
+   - [PostgreSQL Downloads](https://www.postgresql.org/download/)
+
+2. Create a new database:
    ```sql
    CREATE DATABASE legal_assistance_db;
    CREATE USER postgres_user WITH PASSWORD 'your_secure_password';
@@ -47,9 +49,46 @@ Comma-separated list of host/domain names that the application can serve:
    DB_NAME=legal_assistance_db
    DB_USER=postgres_user
    DB_PASSWORD=your_secure_password
-   DB_HOST=localhost    # or your cloud provider's host
+   DB_HOST=localhost
    DB_PORT=5432
    ```
+
+#### Option 2: Supabase (Recommended)
+
+1. Create a free Supabase account at [supabase.com](https://supabase.com/)
+
+2. Create a new project:
+   - Go to the Supabase dashboard
+   - Click "New Project"
+   - Enter a name for your project
+   - Set a secure database password (save this for later)
+   - Choose a region closest to your users
+   - Click "Create new project"
+
+3. Get your database connection information:
+   - In your project dashboard, go to "Settings" > "Database"
+   - Find the "Connection Info" section
+   - Note the following information:
+     - Host: `[your-project-ref].supabase.co` (not db.[your-project-ref].supabase.co)
+     - Database name: `postgres`
+     - Port: `5432` 
+     - User: `postgres`
+     - Password: The password you set when creating the project
+
+4. Configure your `.env` file with Supabase details:
+   ```
+   DB_ENGINE=django.db.backends.postgresql
+   DB_NAME=postgres
+   DB_USER=postgres
+   DB_PASSWORD=your-supabase-db-password
+   DB_HOST=your-project-ref.supabase.co
+   DB_PORT=5432
+   ```
+
+5. Configure database security:
+   - In Supabase, go to "Settings" > "Database"
+   - Under "Connection Pooling", ensure that "Pool Mode" is set to "Transaction"
+   - Under "Network Restrictions", you might need to add your application's IP to the allowed list in production
 
 ## Redis Settings
 

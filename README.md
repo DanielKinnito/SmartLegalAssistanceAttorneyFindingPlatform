@@ -47,7 +47,7 @@ The project consists of two main components:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/SmartLegalAssistancePlatform.git
+   git clone https://github.com/AASTUSoftwareDepartment/SmartLegalAssistancePlatform.git
    cd SmartLegalAssistancePlatform
    ```
 
