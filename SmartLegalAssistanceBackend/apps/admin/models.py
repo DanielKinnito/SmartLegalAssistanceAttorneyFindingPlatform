@@ -38,7 +38,7 @@ class AdminNotification(models.Model):
     admin = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
     title = models.CharField(max_length=100)
     message = models.TextField()
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    category = models.CharField(max_length=25, choices=CATEGORY_CHOICES)
     is_read = models.BooleanField(default=False)
     reference_id = models.UUIDField(blank=True, null=True)  # Reference to related object
     created_at = models.DateTimeField(auto_now_add=True)

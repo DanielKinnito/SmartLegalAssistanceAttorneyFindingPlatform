@@ -32,6 +32,7 @@ THIRD_PARTY_APPS = [
     'djoser',
     'django_filters',
     'oauth2_provider',
+    'social_django',
     'drf_yasg',
 ]
 
@@ -39,7 +40,7 @@ LOCAL_APPS = [
     'apps.users',
     'apps.attorneys',
     'apps.clients',
-    'apps.admin',
+    'apps.admin.apps.AdminAppConfig',
     'apps.chatbot',
     'apps.document_generation',
 ]
@@ -195,4 +196,41 @@ CELERY_TIMEZONE = TIME_ZONE
 
 # API Documentation Settings
 API_DOCS_TITLE = "Smart Legal Assistance API"
-API_DOCS_DESCRIPTION = "API documentation for the Smart Legal Assistance platform" 
+API_DOCS_DESCRIPTION = "API documentation for the Smart Legal Assistance platform"
+
+# Social Authentication Settings
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',  # Google OAuth2
+    'social_core.backends.github.GithubOAuth2',  # GitHub OAuth2
+    'django.contrib.auth.backends.ModelBackend',  # Default Django backend
+)
+
+# Google OAuth2
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get('OAUTH_CLIENT_ID', '')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get('OAUTH_CLIENT_SECRET', '')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+]
+
+# GitHub OAuth2
+SOCIAL_AUTH_GITHUB_KEY = os.environ.get('GITHUB_CLIENT_ID', '')
+SOCIAL_AUTH_GITHUB_SECRET = os.environ.get('GITHUB_CLIENT_SECRET', '')
+SOCIAL_AUTH_GITHUB_SCOPE = ['user:email']
+
+# Social Auth Pipeline
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
+
+# Social Auth Login Redirect
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/' 

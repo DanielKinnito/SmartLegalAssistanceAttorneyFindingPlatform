@@ -30,12 +30,13 @@ urlpatterns = [
     # Authentication URLs
     path('api/auth/', include('djoser.urls')),
     path('oauth/', include('oauth2_provider.urls', namespace='oauth2_provider')),
+    path('auth/', include('social_django.urls', namespace='social')),
     
     # API endpoints for different apps
     path('api/users/', include('apps.users.urls')),
     path('api/attorneys/', include('apps.attorneys.urls')),
     path('api/clients/', include('apps.clients.urls')),
-    path('api/admin/', include('apps.admin.urls')),
+    path('api/admin/', include('apps.admin.urls', namespace='admin_app')),
     path('api/chatbot/', include('apps.chatbot.urls')),
     path('api/documents/', include('apps.document_generation.urls')),
     
