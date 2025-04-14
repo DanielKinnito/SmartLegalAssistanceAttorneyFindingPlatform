@@ -1,0 +1,62 @@
+/* Custom Swagger UI Styling */
+.swagger-ui .topbar {
+    background-color: #1a365d;
+}
+
+.swagger-ui .topbar .download-url-wrapper .select-label select {
+    border-color: #4a5568;
+}
+
+.swagger-ui .topbar-wrapper a img {
+    display: none;
+}
+
+.swagger-ui .topbar-wrapper::before {
+    content: 'Smart Legal Assistance';
+    color: white;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.swagger-ui .info .title {
+    color: #2c5282;
+}
+
+.swagger-ui .opblock-tag {
+    color: #2c5282;
+}
+
+.swagger-ui .opblock.opblock-get {
+    border-color: #4299e1;
+    background: rgba(66, 153, 225, 0.1);
+}
+
+.swagger-ui .opblock.opblock-post {
+    border-color: #48bb78;
+    background: rgba(72, 187, 120, 0.1);
+}
+
+.swagger-ui .opblock.opblock-put {
+    border-color: #ed8936;
+    background: rgba(237, 137, 54, 0.1);
+}
+
+.swagger-ui .opblock.opblock-delete {
+    border-color: #f56565;
+    background: rgba(245, 101, 101, 0.1);
+}
+
+.swagger-ui .btn.execute {
+    background-color: #4299e1;
+}
+
+.swagger-ui .btn.execute:hover {
+    background-color: #2b6cb0;
+}
+
+/* Improve readability of models */
+.swagger-ui .model-box {
+    background-color: #f7fafc;
+    padding: 15px;
+    border-radius: 4px;
+} 
