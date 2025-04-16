@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: smart-legal-assistance-backend
+    plan: free
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: ./
+    # Alternatively, use this to deploy from Docker Hub:
+    # image: yourusername/smart-legal-assistance-backend:latest
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smart-legal-assistance-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: smart-legal-assistance-redis
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        value: smart-legal-assistance-backend.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://smart-legal-assistance-frontend.onrender.com
+      - key: PORT
+        value: 8000
+
+databases:
+  - name: smart-legal-assistance-db
+    databaseName: legal_assistance_db
+    user: postgres
+    plan: free
+
+redis:
+  - name: smart-legal-assistance-redis
+    plan: free 
