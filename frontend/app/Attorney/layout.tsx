@@ -76,7 +76,6 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
             </Typography>
           </Link>
 
-          {/* Center - Navigation Links (hidden on mobile) */}
           <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-2">
             {navItems.map((item) => (
               <Link key={item.text} href={item.path} passHref legacyBehavior>
@@ -96,9 +95,7 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
             ))}
           </div>
 
-          {/* Right - Profile Controls */}
           <div className="flex items-center gap-3 border-1 border-white p-1 rounded-full">
-            {/* Notification Button */}
             <IconButton sx={{ 
               color: '#1E2E45',
               backgroundColor: 'white',
@@ -113,7 +110,6 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
               </Badge>
             </IconButton>
 
-            {/* Availability Status */}
             <Box 
               sx={{
                 display: 'flex',
@@ -151,50 +147,18 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
               
             </Box>
 
-            {/* Profile Section */}
-            <Box 
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                backgroundColor: 'white',
-                borderRadius: '24px',
-                pl: 1,
-                pr: 1.5,
-                py: 0.5,
-                gap: 1,
-                '&:hover': {
-                  backgroundColor: 'rgba(255,255,255,0.9)'
-                }
-              }}
-            >
-              <IconButton
-                onClick={handleMenuOpen}
-                sx={{ 
-                  p: 0,
-                  '&:hover': {
-                    backgroundColor: 'transparent'
-                  }
+            <Chip
+                avatar={<Avatar alt="Natacha" src="https://i.pinimg.com/736x/cd/4b/d9/cd4bd9b0ea2807611ba3a67c331bff0b.jpg" />}
+                label="Avatar"
+                sx={{
+                    backgroundColor: 'white',
+                    cursor: 'pointer',
+                    '&:hover': {
+                        backgroundColor: 'rgba(255,255,255,0.9)'
+                    }
                 }}
-              >
-                <Avatar 
-                  alt="Profile" 
-                  src="/profile-placeholder.jpg" 
-                  sx={{ width: 24, height: 24 }}
                 />
-              </IconButton>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: '#1E2E45',
-                  fontWeight: 'bold',
-                  fontSize: '0.75rem'
-                }}
-              >
-                John Doe
-              </Typography>
-            </Box>
 
-            {/* Profile Dropdown Menu */}
             <Menu
               anchorEl={anchorEl}
               open={open}
@@ -234,7 +198,6 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
         </Toolbar>
       </AppBar>
 
-      {/* Main Content */}
       <main className="flex-grow p-4 md:p-6 bg-white">
         {children}
       </main>
