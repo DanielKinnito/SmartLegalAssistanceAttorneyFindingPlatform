@@ -1,67 +1,91 @@
 # Smart Legal Assistance Platform - Backend
 
-This repository contains the backend code for the Smart Legal Assistance Platform, a platform connecting clients with legal professionals.
+This is the backend component of the Smart Legal Assistance Platform, a platform designed to connect clients with attorneys and provide legal document generation services.
 
-## Running Locally
+## Architecture
 
-1. **Clone this repository:**  
-   * Clone this repository to your local machine and open the folder.
+The backend is structured as a microservices architecture with the following components:
 
-2. **Set up environment variables:**
-   * Copy `.env.example` to `.env` and configure the required environment variables.
+1. **API Gateway**: A FastAPI service that routes requests to the appropriate microservice.
+2. **Auth Service**: Handles user authentication and authorization.
+3. **Attorney Service**: Manages attorney profiles, specialties, and credentials.
+4. **Client Service**: Manages client profiles and legal requests.
+5. **Document Service**: Handles document template management and generation.
+6. **Shared**: Common code and utilities used across services.
 
-3. **Install dependencies:**
-   ```
-   pip install -r requirements.txt
-   ```
+```
+backend/
+├── api-gateway/     # Gateway service for routing requests
+├── auth-service/    # Authentication and user management
+├── attorney-service/# Attorney profile management
+├── client-service/  # Client profile management
+├── document-service/# Document generation
+├── shared/          # Shared utilities
+├── docker/          # Docker-related files
+└── docker-compose.yml
+```
 
-4. **Apply migrations:**
-   ```
-   python manage.py migrate
-   ```
+## Development Setup
 
-5. **Create an admin user:**
-   ```
-   python manage.py create_admin
-   ```
-   Or specify the credentials directly:
-   ```
-   python manage.py create_admin --email admin@example.com --password securepassword
-   ```
+### Prerequisites
 
-   Default admin credentials for testing (DO NOT USE IN PRODUCTION):
-   - Email: admin@legalassistance.com
-   - Password: admin123
+- Python 3.10+
+- Docker and Docker Compose
+- PostgreSQL (optional for local development)
 
-6. **Run the development server:**
-   ```
-   python manage.py runserver
-   ```
+### Local Development
 
-## API Documentation
+1. Clone the repository:
 
-Once the backend server is running, API documentation is available at:
+```bash
+git clone https://github.com/yourusername/smart-legal-assistance.git
+cd smart-legal-assistance/backend
+```
 
-- Swagger UI: `http://localhost:8000/swagger/`
-- ReDoc: `http://localhost:8000/redoc/`
+2. Run with Docker Compose:
 
-## Features
+```bash
+docker-compose up
+```
 
-- User authentication and authorization
-- Attorney profiles and specialties
-- Client case management
-- Document generation
-- Legal chatbot assistance
-- Appointment scheduling
-- Administrative dashboard
+This will start all services, including a PostgreSQL database.
 
-## Technologies Used
+3. Alternatively, you can run individual services for development:
 
-- Django REST Framework
-- PostgreSQL / SQLite
-- JWT Authentication
-- Celery for background tasks
-- Docker for containerization
+```bash
+# Auth Service
+cd auth-service
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver 8001
+```
+
+### API Documentation
+
+When running locally, API documentation is available at:
+
+- API Gateway: http://localhost:8000/docs
+- Auth Service: http://localhost:8001/api/schema/swagger-ui/
+- Attorney Service: http://localhost:8002/api/schema/swagger-ui/
+- Client Service: http://localhost:8003/api/schema/swagger-ui/
+- Document Service: http://localhost:8004/api/schema/swagger-ui/
+
+## Deployment
+
+The application is configured for deployment on Render.com using the `render.yaml` file.
+
+To deploy:
+
+1. Push your code to GitHub
+2. Create a new Render Blueprint instance
+3. Point it to your repository
+4. Render will automatically set up all services and databases
+
+## Environment Variables
+
+Each service has its own set of environment variables. See the `docker-compose.yml` file for the complete list.
 
 ## License
 

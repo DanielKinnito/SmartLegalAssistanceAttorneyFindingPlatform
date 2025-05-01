@@ -1,39 +1,124 @@
 services:
-  - type: web
-    name: smart-legal-assistance-backend
-    plan: free
+  - name: api-gateway
+    type: web
     env: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: ./
-    # Alternatively, use this to deploy from Docker Hub:
-    # image: yourusername/smart-legal-assistance-backend:latest
+    dockerfilePath: ./api-gateway/Dockerfile
+    dockerContext: ./api-gateway
     envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
+      - key: AUTH_SERVICE_URL
+        value: https://smart-legal-auth-service.onrender.com
+      - key: ATTORNEY_SERVICE_URL
+        value: https://smart-legal-attorney-service.onrender.com
+      - key: CLIENT_SERVICE_URL
+        value: https://smart-legal-client-service.onrender.com
+      - key: DOCUMENT_SERVICE_URL
+        value: https://smart-legal-document-service.onrender.com
+      - key: CORS_ORIGINS
+        value: https://smart-legal-assistance.onrender.com
+
+  - name: auth-service
+    type: web
+    env: docker
+    dockerfilePath: ./auth-service/Dockerfile
+    dockerContext: ./auth-service
+    envVars:
       - key: SECRET_KEY
         generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: smart-legal-auth-service.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://smart-legal-assistance.onrender.com
       - key: DATABASE_URL
         fromDatabase:
-          name: smart-legal-assistance-db
+          name: auth-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: smart-legal-assistance-redis
-          property: connectionString
+
+  - name: attorney-service
+    type: web
+    env: docker
+    dockerfilePath: ./attorney-service/Dockerfile
+    dockerContext: ./attorney-service
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
       - key: ALLOWED_HOSTS
-        value: smart-legal-assistance-backend.onrender.com
+        value: smart-legal-attorney-service.onrender.com
       - key: CORS_ALLOWED_ORIGINS
-        value: https://smart-legal-assistance-frontend.onrender.com
-      - key: PORT
-        value: 8000
+        value: https://smart-legal-assistance.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: attorney-db
+          property: connectionString
+      - key: AUTH_SERVICE_URL
+        value: https://smart-legal-auth-service.onrender.com/api
+
+  - name: client-service
+    type: web
+    env: docker
+    dockerfilePath: ./client-service/Dockerfile
+    dockerContext: ./client-service
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: smart-legal-client-service.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://smart-legal-assistance.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: client-db
+          property: connectionString
+      - key: AUTH_SERVICE_URL
+        value: https://smart-legal-auth-service.onrender.com/api
+      - key: ATTORNEY_SERVICE_URL
+        value: https://smart-legal-attorney-service.onrender.com/api
+
+  - name: document-service
+    type: web
+    env: docker
+    dockerfilePath: ./document-service/Dockerfile
+    dockerContext: ./document-service
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: smart-legal-document-service.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://smart-legal-assistance.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: document-db
+          property: connectionString
+      - key: AUTH_SERVICE_URL
+        value: https://smart-legal-auth-service.onrender.com/api
+      - key: CLIENT_SERVICE_URL
+        value: https://smart-legal-client-service.onrender.com/api
 
 databases:
-  - name: smart-legal-assistance-db
-    databaseName: legal_assistance_db
-    user: postgres
+  - name: auth-db
+    databaseName: auth_db
+    user: auth_user
     plan: free
 
-redis:
-  - name: smart-legal-assistance-redis
+  - name: attorney-db
+    databaseName: attorney_db
+    user: attorney_user
+    plan: free
+
+  - name: client-db
+    databaseName: client_db
+    user: client_user
+    plan: free
+
+  - name: document-db
+    databaseName: document_db
+    user: document_user
     plan: free 
