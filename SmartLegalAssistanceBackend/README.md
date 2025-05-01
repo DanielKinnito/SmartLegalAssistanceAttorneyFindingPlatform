@@ -1,96 +1,68 @@
-# Smart Legal Assistance - Backend
+# Smart Legal Assistance Platform - Backend
 
-This is the backend API for the Smart Legal Assistance project, a platform that connects clients with attorneys for legal services.
+This repository contains the backend code for the Smart Legal Assistance Platform, a platform connecting clients with legal professionals.
 
-## Technology Stack
+## Running Locally
 
-- **Framework:** Django & Django REST Framework
-- **Database:** PostgreSQL
-- **Cache/Message Broker:** Redis
-- **Authentication:** JWT (JSON Web Tokens) & OAuth 2.0
-- **Containerization:** Docker & Docker Compose
-- **Task Queue:** Celery
+1. **Clone this repository:**  
+   * Clone this repository to your local machine and open the folder.
 
-## Project Structure
+2. **Set up environment variables:**
+   * Copy `.env.example` to `.env` and configure the required environment variables.
 
-This project follows a modular architecture with the following key components:
-
-- **Users:** Authentication and user management
-- **Attorneys:** Attorney profiles, credentials, and availability
-- **Clients:** Client profiles and legal requests
-- **Admin:** Administrative functions and platform monitoring
-- **Chatbot:** AI-powered legal assistance chatbot
-- **Document Generation:** Legal document templates and generation
-
-## Setup Instructions
-
-### Prerequisites
-
-- Docker and Docker Compose
-- Git
-
-### Installation
-
-1. Clone the repository:
+3. **Install dependencies:**
    ```
-   git clone <repository_url>
-   cd SmartLegalAssistanceBackend
+   pip install -r requirements.txt
    ```
 
-2. Create a `.env` file based on `.env.example`:
+4. **Apply migrations:**
    ```
-   cp .env.example .env
-   ```
-   
-3. Update the environment variables in the `.env` file as needed.
-
-4. Build and start the Docker containers:
-   ```
-   docker-compose up -d --build
+   python manage.py migrate
    ```
 
-5. Create a superuser:
+5. **Create an admin user:**
    ```
-   docker-compose exec web python manage.py createsuperuser
+   python manage.py create_admin
    ```
-
-6. Apply migrations:
+   Or specify the credentials directly:
    ```
-   docker-compose exec web python manage.py migrate
-   ```
-
-7. Collect static files:
-   ```
-   docker-compose exec web python manage.py collectstatic --no-input
+   python manage.py create_admin --email admin@example.com --password securepassword
    ```
 
-### Development
+   Default admin credentials for testing (DO NOT USE IN PRODUCTION):
+   - Email: admin@legalassistance.com
+   - Password: admin123
 
-- Run the development server:
-  ```
-  docker-compose up
-  ```
-
-- Access the Django admin at `http://localhost:8000/admin/`
-- Access the API at `http://localhost:8000/api/`
-
-### Testing
-
-Run tests with:
-```
-docker-compose exec web python manage.py test
-```
+6. **Run the development server:**
+   ```
+   python manage.py runserver
+   ```
 
 ## API Documentation
 
-API documentation is available at `/api/docs/` when the server is running.
+Once the backend server is running, API documentation is available at:
 
-## Contributing
+- Swagger UI: `http://localhost:8000/swagger/`
+- ReDoc: `http://localhost:8000/redoc/`
 
-1. Create a feature branch from development
-2. Make your changes
-3. Submit a pull request
+## Features
+
+- User authentication and authorization
+- Attorney profiles and specialties
+- Client case management
+- Document generation
+- Legal chatbot assistance
+- Appointment scheduling
+- Administrative dashboard
+
+## Technologies Used
+
+- Django REST Framework
+- PostgreSQL / SQLite
+- JWT Authentication
+- Celery for background tasks
+- Docker for containerization
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE). 
+This project is licensed under the MIT License - see the LICENSE file for details. 
