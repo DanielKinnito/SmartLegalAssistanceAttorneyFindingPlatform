@@ -8,7 +8,7 @@ import { Menu, X, User, LogIn } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utlis"
 
-export default function Navbar() {
+export default function NavbarClient() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
 

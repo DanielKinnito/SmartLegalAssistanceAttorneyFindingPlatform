@@ -1,0 +1,53 @@
+@import "tailwindcss/preflight";
+
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: #e4e4e7;
+  border-radius: 4px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #1e2e45;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #1e2e45;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+input[type="checkbox"] {
+  accent-color: #1e2e45;
+}
+
+/* Custom toggle switch styling */
+input[type="checkbox"] + label {
+  width: 40px;
+  height: 24px;
+}
+
+input[type="checkbox"] + label span {
+  width: 20px;
+  height: 20px;
+  margin: 2px;
+}
+
+input[type="checkbox"]:checked + label {
+  background-color: #1e2e45;
+}
+
+input[type="checkbox"]:checked + label span {
+  transform: translateX(16px);
+}
