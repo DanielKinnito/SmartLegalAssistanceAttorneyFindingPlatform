@@ -2,10 +2,9 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
-import "@/globals.css"
+import "./admin.css" // Adjusted import path for global CSS
+
 const inter = Inter({ subsets: ["latin"] })
-
-
 
 export default function RootLayout({
   children,

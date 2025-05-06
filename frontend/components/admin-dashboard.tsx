@@ -28,7 +28,7 @@ export function AdminDashboard() {
           {activeTab === "request-management" && <RequestManagement />}
           {activeTab === "analytics" && <Analytics view="overview" />}
           {activeTab === "content-management" && <ContentManagement />}
-          {activeTab === "communications" && <Communications />}
+          {/* {activeTab === "communications" && <Communications />} */}
           {activeTab === "knowledge-base" && <KnowledgeBase />}
           {activeTab === "settings" && <Settings />}
         </div>

@@ -45,11 +45,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       label: "Content Management",
       icon: FileText,
     },
-    {
-      id: "communications",
-      label: "Communications",
-      icon: MessageSquare,
-    },
+   
     {
       id: "knowledge-base",
       label: "AI Knowledge Base",
