@@ -1,12 +1,7 @@
-import Image from 'next/image';
+'use client';
 
-const ColumnIcon = () => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="7" y="6" width="18" height="3" rx="1.5" fill="#fff"/>
-    <rect x="10" y="9" width="12" height="16" rx="2" fill="#fff"/>
-    <rect x="7" y="25" width="18" height="3" rx="1.5" fill="#fff"/>
-  </svg>
-);
+import Image from 'next/image';
+import Navbar from '@/app/components/Navbar';
 
 export default function About() {
   return (
@@ -26,19 +21,9 @@ export default function About() {
         </div>
 
         {/* Navbar */}
-        <nav className="relative z-10 max-w-7xl mx-auto px-8 pt-8 flex justify-between items-center">
-          <div className="flex items-center gap-2 select-none">
-            <ColumnIcon />
-            <span className="text-2xl font-bold text-white ml-2">LawConnect</span>
-          </div>
-          <div className="flex items-center space-x-8 text-base font-medium">
-            <a href="#" className="text-white/80 hover:text-white transition">Home</a>
-            <a href="#" className="text-white font-bold border-b-2 border-white pb-1">About</a>
-            <a href="#" className="text-white/80 hover:text-white transition">Services</a>
-            <a href="#" className="text-white/80 hover:text-white transition">FindLawyer</a>
-            <a href="#" className="text-white/80 hover:text-white transition">Contact Us</a>
-          </div>
-        </nav>
+        <div className="relative z-10">
+          <Navbar />
+        </div>
 
         {/* Hero Content */}
         <div className="relative z-10 flex flex-row items-center h-full max-w-5xl mx-auto px-8 mt-8">
@@ -48,7 +33,7 @@ export default function About() {
           <div className="h-32 w-px bg-white/30 mx-8 hidden md:block" />
           <div className="flex-1 flex flex-col justify-center">
             <p className="text-white text-base md:text-lg leading-relaxed max-w-md">
-              Lorem ipsum dolor sit amet consectetur. Commodo pulvinar molestie pellentesque urna libero velit porta. Velit pellentesque hac gravida pellentesque est semper. Duis lectus gravida
+              We are a team of dedicated legal professionals committed to providing accessible, high-quality legal services. Our mission is to connect individuals and businesses with expert attorneys who can help navigate complex legal challenges.
             </p>
           </div>
         </div>
@@ -61,7 +46,7 @@ export default function About() {
           <div className="md:w-1/2 border-r border-gray-300 pr-8">
             <div className="mb-2 text-sm text-gray-500 font-semibold">About Us</div>
             <h2 className="text-4xl font-bold mb-6 leading-tight">
-              Helping To<br />Overcome And<br />Ease The Legal<br />Burden
+              Empowering Justice<br />Through Expert<br />Legal Guidance<br />and Support
             </h2>
           </div>
           <div className="md:w-1/2 flex justify-center">
@@ -71,9 +56,9 @@ export default function About() {
           </div>
         </section>
         <div className="text-center text-gray-700 text-sm max-w-3xl mx-auto mb-12">
-          Lorem ipsum dolor sit amet consectetur. Commodo pulvinar molestie pellentesque urna libero velit porta. Velit pellentesque hac gravida pellentesque est semper. Duis lectus gravida ultricies eleifend in pharetra faucibus orci sem. Proin ac a cursus praesent. Malesuada risus amet nunc posuere rhoncus accumsan congue id dolor. Convallis maecenas sed in pellentesque. Diam tristique semper mauris dolor amet. Dolor elit nunc et purus quam amet laoreet eu risus.Cum mattis mollis odio gravida adipiscing. Facilisis scelerisque non lacinia tincidunt faucibus tortor ut erat risus etiam quam pretium ornare. Semper orci arcu pulvinar adipiscing pretium. Est facilisis dis arcu senectus sit mi fermentum eu aliquam. Felis neque posuere
+          At LawConnect, we believe that access to quality legal representation should be available to everyone. Our platform brings together experienced attorneys from various practice areas, ensuring that clients can find the right legal expertise for their specific needs. We combine traditional legal expertise with modern technology to create a seamless experience for both clients and attorneys.
           <br /><br />
-          Augue tristique quis fringilla nisi quam nisi. Erat pellentesque elementum consequat quis volutpat diam praesent molestie. Molestie scelerisque eleifend eu amet quam vitae fusce aliquam ornare. Accumsan est ut et tristique arcu. Semper lectus vulputate volutpat consectetur gravida ac gravida. Sem placerat pellentesque turpis tellus etiam porttitor sed. Scelerisque condimentum volutpat tempus lobortis. Accumsan dui felis turpis elementum. Leo nibh magnis sodales diam purus dui. Amet nulla urna curabitur consequat augue faucibus rutrum. Est egestas arcu rutrum mauris facilisis elementum diam bibendum tortor id. Magna facilisis egestas sapien faucibus consectetur arcu faucibus. Mattis sapien felis id rutrum mattis nunc.
+          Our team of legal professionals is dedicated to providing personalized attention and strategic solutions. We understand that legal matters can be complex and stressful, which is why we strive to make the process as smooth and transparent as possible. Whether you&apos;re facing a business dispute, family matter, or criminal case, our platform connects you with attorneys who have the experience and expertise to handle your situation effectively.
         </div>
 
         {/* Welcome Message Section */}
@@ -85,11 +70,11 @@ export default function About() {
           </div>
           <div className="md:w-2/3 pl-0 md:pl-8">
             <div className="mb-2 text-sm text-gray-500 font-semibold">Welcome Message</div>
-            <h3 className="text-3xl font-bold mb-4 leading-tight">Hello People,<br />Welcome To<br />LawConnect</h3>
+            <h3 className="text-3xl font-bold mb-4 leading-tight">Welcome to<br />LawConnect -<br />Your Legal Partner</h3>
             <div className="text-gray-700 text-sm">
-              Lorem ipsum dolor sit amet consectetur. Commodo pulvinar molestie pellentesque urna libero velit porta. Velit pellentesque hac gravida pellentesque est semper. Duis lectus gravida ultricies eleifend in pharetra faucibus orci sem. Proin ac a cursus praesent. Malesuada risus amet nunc posuere rhoncus accumsan congue id dolor. Convallis maecenas sed in pellentesque. Diam tristique semper mauris dolor amet. Dolor elit nunc et purus quam amet laoreet eu risus.Cum mattis mollis odio gravida adipiscing. Facilisis scelerisque non lacinia tincidunt faucibus tortor ut erat risus etiam quam pretium ornare. Semper orci arcu pulvinar adipiscing pretium. Est facilisis dis arcu senectus sit mi fermentum eu aliquam. Felis neque posuere
+              Founded with a vision to revolutionize legal services, LawConnect has grown into a trusted platform connecting clients with top-tier legal professionals. Our commitment to excellence and client satisfaction has made us a leading name in legal services.
               <br /><br />
-              Augue tristique quis fringilla nisi quam nisi. Erat pellentesque elementum consequat quis volutpat diam praesent molestie. Molestie scelerisque eleifend eu amet quam vitae fusce aliquam ornare. Accumsan est ut et tristique arcu. Semper lectus vulputate volutpat consectetur gravida ac gravida. Sem placerat pellentesque turpis tellus etiam porttitor sed. Scelerisque condimentum volutpat tempus lobortis. Accumsan dui felis turpis elementum. Leo nibh magnis sodales diam purus dui. Amet nulla urna curabitur consequat augue faucibus rutrum. Est egestas arcu rutrum mauris facilisis elementum diam bibendum tortor id. Magna facilisis egestas sapien faucibus consectetur arcu faucibus. Mattis sapien felis id rutrum mattis nunc.
+              We understand that legal matters can be overwhelming, which is why we&apos;ve created a platform that simplifies the process of finding and working with qualified attorneys. Our team of experienced lawyers brings decades of combined experience across various practice areas, ensuring that you receive expert guidance tailored to your specific needs.
             </div>
           </div>
         </section>
@@ -99,17 +84,17 @@ export default function About() {
           <div className="md:w-1/2 pr-8 border-r border-gray-200">
             <h4 className="text-3xl font-bold mb-4">Our Vision</h4>
             <div className="text-gray-700 text-sm">
-              Lorem ipsum dolor sit amet consectetur. Commodo pulvinar molestie pellentesque urna libero velit porta. Velit pellentesque hac gravida pellentesque est semper. Duis lectus gravida ultricies eleifend in pharetra faucibus orci sem. Proin ac a cursus praesent.
+              To be the most trusted and accessible legal platform, connecting individuals and businesses with expert legal representation. We envision a future where quality legal services are accessible to everyone, regardless of their background or circumstances.
               <br /><br />
-              Augue tristique quis fringilla nisi quam nisi. Erat pellentesque elementum consequat quis volutpat diam praesent molestie. Molestie scelerisque eleifend eu amet quam vitae fusce aliquam ornare. Accumsan est ut et tristique arcu. Semper lectus vulputate volutpat
+              We strive to transform the legal industry through innovation and technology, making legal services more efficient, transparent, and client-focused. Our vision extends beyond just providing legal services - we aim to empower people with knowledge and support to navigate their legal challenges with confidence.
             </div>
           </div>
           <div className="md:w-1/2 pl-8">
             <h4 className="text-3xl font-bold mb-4">Our Mission</h4>
             <div className="text-gray-700 text-sm">
-              Lorem ipsum dolor sit amet consectetur. Commodo pulvinar molestie pellentesque urna libero velit porta. Velit pellentesque hac gravida pellentesque est semper. Duis lectus gravida ultricies eleifend in pharetra faucibus orci sem. Proin ac a cursus praesent.
+              To provide accessible, high-quality legal services through a platform that connects clients with experienced attorneys. We are committed to ensuring that everyone has access to expert legal representation when they need it most.
               <br /><br />
-              Augue tristique quis fringilla nisi quam nisi. Erat pellentesque elementum consequat quis volutpat diam praesent molestie. Molestie scelerisque eleifend eu amet quam vitae fusce aliquam ornare. Accumsan est ut et tristique arcu. Semper lectus vulputate volutpat
+              Our mission is to simplify the legal process, making it more transparent and less intimidating for our clients. We work tirelessly to match clients with attorneys who have the right expertise and experience for their specific legal needs, ensuring the best possible outcomes for every case.
             </div>
           </div>
         </section>
@@ -122,7 +107,7 @@ export default function About() {
             <div>
               <h4 className="text-lg font-semibold mb-4">About Us</h4>
               <p className="text-gray-400 text-sm mb-4">
-                Lorem ipsum dolor sit amet consectetur. Commodo pulvinar molestie pellentesque urna libero velit porta.
+                LawConnect is your trusted partner in legal matters, connecting you with experienced attorneys who can help navigate complex legal challenges with confidence and expertise.
               </p>
               <div className="flex space-x-4">
                 <a href="#" className="text-gray-400 hover:text-white">
@@ -142,20 +127,21 @@ export default function About() {
             <div>
               <h4 className="text-lg font-semibold mb-4">Services</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li>Business Law</li>
-                <li>Education Law</li>
-                <li>Legal Consultant</li>
-                <li>General Lawyer</li>
+                <li>Corporate Law</li>
+                <li>Family Law</li>
+                <li>Intellectual Property</li>
+                <li>Criminal Defense</li>
+                <li>Real Estate Law</li>
               </ul>
             </div>
             <div>
               <h4 className="text-lg font-semibold mb-4">Pages</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li>Lawyer</li>
-                <li>Appointment</li>
-                <li>Documentation</li>
-                <li>Cases</li>
-                <li>News</li>
+                <li>Find a Lawyer</li>
+                <li>Book Consultation</li>
+                <li>Legal Resources</li>
+                <li>Case Studies</li>
+                <li>Legal Blog</li>
               </ul>
             </div>
             <div>

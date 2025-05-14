@@ -1,4 +1,6 @@
 import Image from 'next/image';
+import Navbar from '../../components/Navbar';
+import AIChatbot from '../../components/AIChatbot';
 
 const partners = [
   { name: 'Daerazo', icon: '/daerazo.png' },
@@ -25,29 +27,13 @@ export default function Home() {
     <div className="font-serif bg-white">
       {/* Hero Section - Updated to match reference image */}
       <div className="bg-[#101726] relative overflow-hidden">
-        <nav className="max-w-7xl mx-auto flex justify-between items-center px-6 py-6">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl text-white">🏛️</span>
-            <span className="text-xl font-bold text-white">LawConnect</span>
-          </div>
-          <div className="flex gap-8 text-white text-base font-medium">
-            <a href="#" className="font-bold border-b-2 border-white pb-1">Home</a>
-            <a href="#" className="hover:text-gray-300">About</a>
-            <a href="#" className="hover:text-gray-300">Services</a>
-            <a href="#" className="hover:text-gray-300">Contact Us</a>
-          </div>
-        </nav>
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center px-6 py-16 relative z-10">
+        <Navbar />
+        <div className="max-w-7xl h-[85vh] mx-auto flex flex-col md:flex-row items-center px-6 py-16 relative z-10">
           <div className="flex-1">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
               Uphold Truth For<br />Justice With LawConnect
             </h1>
-            <div className="flex gap-6 mb-8">
-              <a href="#" className="text-white font-medium">Easy Talk</a>
-              <a href="#" className="text-white font-medium">Learn More</a>
-              <a href="#" className="text-white font-medium">Watch Back</a>
-              <a href="#" className="text-white font-medium">Marketing</a>
-            </div>
+            
             <button className="bg-[#CBB26A] text-white px-8 py-3 rounded font-semibold shadow hover:bg-[#bfa14e] transition">Get Started</button>
           </div>
           <div className="flex-1 flex justify-end mt-10 md:mt-0">
@@ -261,6 +247,7 @@ m eu turpis molestie, dictum est a, mattis tellus.</p>
           © 2025 LawConnect. All rights reserved.
         </div>
       </footer>
+      <AIChatbot />
     </div>
   );
 }

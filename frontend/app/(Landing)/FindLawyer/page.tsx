@@ -1,6 +1,15 @@
-import Image from 'next/image';
+'use client';
 
-const lawyers = [
+import Image from 'next/image';
+import Navbar from '@/app/components/Navbar';
+
+interface Lawyer {
+  name: string;
+  title: string;
+  img: string;
+}
+
+const lawyers: Lawyer[] = [
   {
     name: 'Laitman Harry',
     title: 'Senior Business Lawyer',
@@ -51,18 +60,8 @@ export default function FindLawyerPage() {
           <div className="absolute inset-0 bg-[#232b36] opacity-80" />
         </div>
         {/* Top bar: logo and nav */}
-        <div className="relative z-10 flex items-center justify-between px-10 pt-8">
-          <div className="flex items-center gap-2 select-none">
-            <span className="text-2xl">🏛️</span>
-            <span className="text-2xl font-bold text-white ml-2">LawConnect</span>
-          </div>
-          <nav className="flex gap-8 text-white text-base font-medium">
-            <a href="#" className="hover:text-white/80">Home</a>
-            <a href="#" className="hover:text-white/80">About</a>
-            <a href="#" className="hover:text-white/80">Services</a>
-            <a href="#" className="font-bold border-b-2 border-white pb-1">FindLawyer</a>
-            <a href="#" className="hover:text-white/80">Contact Us</a>
-          </nav>
+        <div className="relative z-10">
+          <Navbar />
         </div>
         {/* Title, divider, and description */}
         <div className="relative z-10 flex flex-col md:flex-row items-center max-w-5xl mx-auto px-8 mt-8 h-full">
