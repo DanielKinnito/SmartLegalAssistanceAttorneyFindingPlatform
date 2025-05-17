@@ -19,6 +19,7 @@ on:
 
 env:
   DOCKER_TAG: ${{ github.sha }}
+  DOCKER_REPO: kinnito/smart-legal-assistance
 
 jobs:
   build-and-push:
@@ -60,14 +61,14 @@ jobs:
         file: ./backend/Dockerfile
         push: ${{ github.event_name != 'pull_request' }}
         tags: |
-          smartlegalassistance/backend:${{ env.DOCKER_TAG }}
-          smartlegalassistance/backend:latest
-        cache-from: type=registry,ref=smartlegalassistance/backend:buildcache
-        cache-to: type=registry,ref=smartlegalassistance/backend:buildcache,mode=max
+          ${{ env.DOCKER_REPO }}:${{ env.DOCKER_TAG }}
+          ${{ env.DOCKER_REPO }}:latest
+        cache-from: type=registry,ref=${{ env.DOCKER_REPO }}:buildcache
+        cache-to: type=registry,ref=${{ env.DOCKER_REPO }}:buildcache,mode=max
         
     - name: Run backend tests
       run: |
-        docker run --rm smartlegalassistance/backend:${{ env.DOCKER_TAG }} python manage.py test
+        docker run --rm ${{ env.DOCKER_REPO }}:${{ env.DOCKER_TAG }} python manage.py test
         
     - name: Update deployment
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
