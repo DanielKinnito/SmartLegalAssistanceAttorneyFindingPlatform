@@ -4,7 +4,10 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth import get_user_model
-from .serializers import UserRegistrationSerializer, UserSerializer, CustomTokenObtainPairSerializer
+from .serializers import (
+    UserRegistrationSerializer, UserSerializer, CustomTokenObtainPairSerializer,
+    ClientRegistrationSerializer, AttorneyRegistrationSerializer
+)
 from .models import UserActivity
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -346,4 +349,120 @@ def get_client_ip(request):
         ip = x_forwarded_for.split(',')[0]
     else:
         ip = request.META.get('REMOTE_ADDR')
-    return ip 
+    return ip
+
+
+class ClientRegistrationView(APIView):
+    """
+    Client registration view.
+    """
+    permission_classes = [permissions.AllowAny]
+    
+    @swagger_auto_schema(
+        request_body=ClientRegistrationSerializer,
+        responses={
+            201: openapi.Response(
+                description="Client registered successfully",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'user': openapi.Schema(type=openapi.TYPE_OBJECT, description="User data"),
+                        'refresh': openapi.Schema(type=openapi.TYPE_STRING, description="JWT refresh token"),
+                        'access': openapi.Schema(type=openapi.TYPE_STRING, description="JWT access token"),
+                    }
+                )
+            ),
+            400: "Bad Request"
+        },
+        operation_description="Register a new client and return authentication tokens"
+    )
+    def post(self, request):
+        serializer = ClientRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            # Create tokens for the user
+            refresh = RefreshToken.for_user(user)
+            
+            # Log the activity
+            UserActivity.objects.create(
+                user=user,
+                activity_type='CLIENT_REGISTRATION',
+                ip_address=self.get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+            
+            return Response({
+                'user': UserSerializer(user).data,
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get_client_ip(self, request):
+        """Get the client's IP address."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class AttorneyRegistrationView(APIView):
+    """
+    Attorney registration view.
+    """
+    permission_classes = [permissions.AllowAny]
+    
+    @swagger_auto_schema(
+        request_body=AttorneyRegistrationSerializer,
+        responses={
+            201: openapi.Response(
+                description="Attorney registered successfully",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'user': openapi.Schema(type=openapi.TYPE_OBJECT, description="User data"),
+                        'refresh': openapi.Schema(type=openapi.TYPE_STRING, description="JWT refresh token"),
+                        'access': openapi.Schema(type=openapi.TYPE_STRING, description="JWT access token"),
+                    }
+                )
+            ),
+            400: "Bad Request"
+        },
+        operation_description="Register a new attorney and return authentication tokens"
+    )
+    def post(self, request):
+        serializer = AttorneyRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            # Create tokens for the user
+            refresh = RefreshToken.for_user(user)
+            
+            # Log the activity
+            UserActivity.objects.create(
+                user=user,
+                activity_type='ATTORNEY_REGISTRATION',
+                ip_address=self.get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+            
+            return Response({
+                'user': UserSerializer(user).data,
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get_client_ip(self, request):
+        """Get the client's IP address."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip 
