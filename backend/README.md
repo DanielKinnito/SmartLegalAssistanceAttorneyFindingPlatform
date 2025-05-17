@@ -246,4 +246,24 @@ CORS_ALLOWED_ORIGINS=https://your-frontend-domain.com
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Deployment
+
+### GitHub Workflow for Automatic Docker Builds
+
+This project uses GitHub Actions to automatically build and push Docker images whenever changes are made to the codebase. The workflow is configured to:
+
+1. Trigger on pushes to the main branch that modify Python files, requirements.txt, Dockerfile, or docker-compose.yml
+2. Build the Docker image and tag it with both the commit SHA and 'latest'
+3. Push the image to DockerHub
+4. Optionally deploy to Render using a webhook
+
+For detailed setup instructions, see [GitHub Workflow Setup Guide](docs/github_workflow_setup.md).
+
+### Manual Deployment
+
+1. Push your code to GitHub
+2. Create a new Render Blueprint instance
+3. Point it to your repository
+4. Render will automatically set up all services and databases 

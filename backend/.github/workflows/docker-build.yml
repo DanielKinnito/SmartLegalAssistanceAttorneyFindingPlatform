@@ -3,8 +3,19 @@ name: Build and Push Docker Image
 on:
   push:
     branches: [ main ]
+    paths:
+      - '**/*.py'
+      - 'requirements.txt'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.github/workflows/docker-build.yml'
   pull_request:
     branches: [ main ]
+    paths:
+      - '**/*.py'
+      - 'requirements.txt'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
 
 env:
   DOCKER_IMAGE: smartlegalassistance/backend
@@ -15,7 +26,17 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Ensure settings __init__.py is properly configured
+      run: |
+        if [ -z "$(cat config/settings/__init__.py)" ]; then
+          echo "Fixing empty settings/__init__.py file"
+          echo 'import os' > config/settings/__init__.py
+          echo '# Default to production settings, can be overridden by DJANGO_SETTINGS_MODULE env var' >> config/settings/__init__.py
+          echo 'from .production import *' >> config/settings/__init__.py
+        fi
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -30,6 +51,7 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
+        file: ./Dockerfile
         push: ${{ github.event_name != 'pull_request' }}
         tags: |
           ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}

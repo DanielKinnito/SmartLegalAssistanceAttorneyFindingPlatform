@@ -11,15 +11,21 @@ import sqlite3
 import shutil
 from datetime import datetime
 
+# Add the project root directory to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 def backup_database():
     """Create a backup of the current database."""
-    if os.path.exists('db.sqlite3'):
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    db_path = os.path.join(root_dir, 'db.sqlite3')
+    
+    if os.path.exists(db_path):
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_path = f'db_backup_{timestamp}.sqlite3'
+        backup_path = os.path.join(root_dir, f'db_backup_{timestamp}.sqlite3')
         
         try:
             # Try to copy the file directly
-            shutil.copy2('db.sqlite3', backup_path)
+            shutil.copy2(db_path, backup_path)
             print(f"✅ Database backed up to {backup_path}")
         except PermissionError:
             print("❌ Cannot access the database file - it's locked by another process.")
@@ -31,10 +37,13 @@ def backup_database():
 def create_empty_database():
     """Create a new empty database with just enough structure to work."""
     try:
+        root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        db_path = os.path.join(root_dir, 'db.sqlite3')
+        
         # Remove existing database if it exists
-        if os.path.exists('db.sqlite3'):
+        if os.path.exists(db_path):
             try:
-                os.remove('db.sqlite3')
+                os.remove(db_path)
                 print("✅ Removed old database file")
             except PermissionError:
                 print("❌ Cannot remove the database file - it's locked by another process.")
@@ -42,7 +51,7 @@ def create_empty_database():
                 sys.exit(1)
         
         # Create a new empty database
-        conn = sqlite3.connect('db.sqlite3')
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
         # Create a minimal django_migrations table to track migrations
@@ -105,10 +114,14 @@ def create_empty_database():
 
 def create_env_file():
     """Create a .env file that points to Supabase."""
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    env_path = os.path.join(root_dir, '.env')
+    
     # Backup existing .env file if it exists
-    if os.path.exists('.env'):
+    if os.path.exists(env_path):
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        shutil.copy2('.env', f'.env.bak_{timestamp}')
+        backup_path = os.path.join(root_dir, f'.env.bak_{timestamp}')
+        shutil.copy2(env_path, backup_path)
         print(f"✅ Backed up existing .env file to .env.bak_{timestamp}")
         
     env_content = """# Database Configuration (PostgreSQL - Supabase)
@@ -133,13 +146,14 @@ JWT_SECRET_KEY=your-jwt-secret-key-replace-this
 JWT_ACCESS_TOKEN_LIFETIME=5
 JWT_REFRESH_TOKEN_LIFETIME=1
 """
-    with open('.env', 'w') as f:
+    with open(env_path, 'w') as f:
         f.write(env_content)
     print("✅ Created .env file with Supabase configuration")
 
 def create_disable_migrations_setting():
     """Create a settings file that disables migrations."""
-    migrations_path = os.path.join('config', 'settings', 'disable_migrations.py')
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    migrations_path = os.path.join(root_dir, 'config', 'settings', 'disable_migrations.py')
     
     content = """# Settings to disable Django migrations
 # Import this at the end of your settings file
@@ -181,8 +195,10 @@ def main():
     create_disable_migrations_setting()
     
     # Create migrations_not_used directory if it doesn't exist
-    os.makedirs('smart_legal_assistance/migrations_not_used', exist_ok=True)
-    with open('smart_legal_assistance/migrations_not_used/__init__.py', 'w') as f:
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    migrations_dir = os.path.join(root_dir, 'smart_legal_assistance', 'migrations_not_used')
+    os.makedirs(migrations_dir, exist_ok=True)
+    with open(os.path.join(migrations_dir, '__init__.py'), 'w') as f:
         f.write('# This file exists to make the directory a Python package')
     
     print("\n✅ All fixes applied successfully!")

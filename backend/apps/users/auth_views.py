@@ -14,6 +14,10 @@ from drf_yasg import openapi
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .utils import create_verification_token, send_verification_email, verify_email_token
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+import logging
+
+# Get a named logger for this module
+logger = logging.getLogger('django')
 
 User = get_user_model()
 
@@ -62,6 +66,8 @@ class RegisterView(APIView):
             token = create_verification_token(user)
             send_verification_email(user, token)
             
+            logger.info(f"User registered successfully: {user.email}")
+            
             return Response({
                 'user': UserSerializer(user).data,
                 'refresh': str(refresh),
@@ -69,6 +75,7 @@ class RegisterView(APIView):
                 'message': 'Registration successful. Please check your email to verify your account.'
             }, status=status.HTTP_201_CREATED)
         
+        logger.warning(f"User registration failed: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def get_client_ip(self, request):
@@ -112,25 +119,33 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         operation_description="Login with email and password to obtain JWT tokens"
     )
     def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        
-        if response.status_code == status.HTTP_200_OK:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            user = serializer.validated_data['user']
+        try:
+            response = super().post(request, *args, **kwargs)
             
-            # Log the login activity
-            client_ip = self.get_client_ip(request)
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            if response.status_code == status.HTTP_200_OK:
+                serializer = self.get_serializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                user = serializer.validated_data['user']
+                
+                # Log the login activity
+                client_ip = self.get_client_ip(request)
+                user_agent = request.META.get('HTTP_USER_AGENT', '')
+                
+                UserActivity.objects.create(
+                    user=user,
+                    activity_type='LOGIN',
+                    ip_address=client_ip,
+                    user_agent=user_agent
+                )
+                
+                logger.info(f"User logged in successfully: {user.email}")
+            else:
+                logger.warning(f"Login failed with status {response.status_code}")
             
-            UserActivity.objects.create(
-                user=user,
-                activity_type='LOGIN',
-                ip_address=client_ip,
-                user_agent=user_agent
-            )
-        
-        return response
+            return response
+        except Exception as e:
+            logger.error(f"Login error: {str(e)}")
+            raise
     
     def get_client_ip(self, request):
         """Get the client's IP address."""
@@ -205,6 +220,7 @@ class LogoutView(APIView):
         try:
             refresh_token = request.data.get('refresh')
             if not refresh_token:
+                logger.warning(f"Logout failed: No refresh token provided - User: {request.user.email}")
                 return Response({"detail": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
                 
             token = RefreshToken(refresh_token)
@@ -218,8 +234,10 @@ class LogoutView(APIView):
                 user_agent=request.META.get('HTTP_USER_AGENT', '')
             )
             
+            logger.info(f"User logged out successfully: {request.user.email}")
             return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
         except Exception as e:
+            logger.error(f"Logout error for user {request.user.email}: {str(e)}")
             return Response({"detail": "Invalid token or token already blacklisted."}, status=status.HTTP_400_BAD_REQUEST)
     
     def get_client_ip(self, request):
@@ -552,19 +570,23 @@ def verify_email(request):
     """
     token_string = request.data.get('token')
     if not token_string:
+        logger.warning(f"Email verification failed: No token provided")
         return Response(
             {'success': False, 'message': 'Token is required.'},
             status=status.HTTP_400_BAD_REQUEST
         )
     
+    logger.debug(f"Processing email verification with token: {token_string[:5]}...")
     success, message = verify_email_token(token_string)
     
     if success:
+        logger.info(f"Email verification successful for token: {token_string[:5]}...")
         return Response(
             {'success': True, 'message': message},
             status=status.HTTP_200_OK
         )
     else:
+        logger.warning(f"Email verification failed: {message}")
         return Response(
             {'success': False, 'message': message},
             status=status.HTTP_400_BAD_REQUEST
@@ -603,6 +625,7 @@ def resend_verification(request):
     """
     email = request.data.get('email')
     if not email:
+        logger.warning("Resend verification failed: No email provided")
         return Response(
             {'success': False, 'message': 'Email is required.'},
             status=status.HTTP_400_BAD_REQUEST
@@ -613,6 +636,7 @@ def resend_verification(request):
         
         # Don't resend if already verified
         if user.email_verified:
+            logger.info(f"Resend verification skipped: Email already verified ({email})")
             return Response(
                 {'success': False, 'message': 'Email is already verified.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -633,6 +657,7 @@ def resend_verification(request):
             user_agent=user_agent
         )
         
+        logger.info(f"Verification email resent successfully to {email}")
         return Response(
             {'success': True, 'message': 'Verification email sent successfully.'},
             status=status.HTTP_200_OK
@@ -640,6 +665,7 @@ def resend_verification(request):
     
     except User.DoesNotExist:
         # For security reasons, don't reveal that the email doesn't exist
+        logger.info(f"Resend verification requested for non-existent email: {email}")
         return Response(
             {'success': True, 'message': 'If this email exists in our system, a verification email has been sent.'},
             status=status.HTTP_200_OK

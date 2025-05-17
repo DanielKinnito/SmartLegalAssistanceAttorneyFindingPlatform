@@ -139,8 +139,8 @@ class AttorneyRegistrationSerializer(UserRegistrationSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user profile data."""
     verification_status = serializers.CharField(read_only=True)
-    client_profile = ClientProfileSerializer(source='client_details', read_only=True)
-    attorney_profile = AttorneyProfileSerializer(source='attorney_details', read_only=True)
+    client_profile = ClientProfileSerializer(read_only=True)
+    attorney_profile = AttorneyProfileSerializer(read_only=True)
     
     class Meta:
         model = User
