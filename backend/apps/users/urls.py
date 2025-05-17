@@ -5,7 +5,7 @@ from .views import UserViewSet, UserActivityViewSet
 from .auth_views import (
     ClientRegistrationView, AttorneyRegistrationView,
     CustomTokenObtainPairView, LogoutView, get_user_profile,
-    change_password, toggle_mfa
+    change_password, toggle_mfa, verify_email, resend_verification
 )
 
 router = DefaultRouter()
@@ -22,6 +22,10 @@ urlpatterns = [
     path('auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
+    
+    # Email verification endpoints
+    path('auth/verify-email/', verify_email, name='verify-email'),
+    path('auth/resend-verification/', resend_verification, name='resend-verification'),
     
     # User profile endpoints
     path('auth/profile/', get_user_profile, name='user-profile'),

@@ -328,6 +328,88 @@ Authorization: Bearer eyJ0eXAi...accesstoken
 }
 ```
 
+### Email Verification
+
+Verifies a user's email address with a token received via email.
+
+- **URL**: `users/auth/verify-email/`
+- **Method**: `POST`
+- **Auth required**: No
+- **Permissions required**: None
+
+**Request Body**:
+
+```json
+{
+  "token": "verification-token-from-email"
+}
+```
+
+**Success Response**:
+
+- **Code**: 200 OK
+- **Content example**:
+
+```json
+{
+  "success": true,
+  "message": "Email successfully verified."
+}
+```
+
+**Error Response**:
+
+- **Code**: 400 Bad Request
+- **Content example**:
+
+```json
+{
+  "success": false,
+  "message": "Invalid or expired token."
+}
+```
+
+### Resend Verification Email
+
+Resends the verification email to a user who hasn't verified their email yet.
+
+- **URL**: `users/auth/resend-verification/`
+- **Method**: `POST`
+- **Auth required**: No
+- **Permissions required**: None
+
+**Request Body**:
+
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Success Response**:
+
+- **Code**: 200 OK
+- **Content example**:
+
+```json
+{
+  "success": true,
+  "message": "Verification email sent successfully."
+}
+```
+
+**Error Response**:
+
+- **Code**: 400 Bad Request
+- **Content example**:
+
+```json
+{
+  "success": false,
+  "message": "Email is already verified."
+}
+```
+
 ## Using Authentication in Requests
 
 For all authenticated endpoints, include the access token in the Authorization header:
