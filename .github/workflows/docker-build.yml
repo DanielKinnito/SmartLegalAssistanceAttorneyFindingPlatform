@@ -1,24 +1,23 @@
-name: Build and Push Docker Image
+name: Build and Push Backend Docker Images
 
 on:
   push:
     branches: [ main ]
     paths:
-      - '**/*.py'
-      - 'requirements.txt'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
+      - 'backend/**/*.py'
+      - 'backend/requirements.txt'
+      - 'backend/**/Dockerfile'
+      - 'backend/docker-compose.yml'
       - '.github/workflows/docker-build.yml'
   pull_request:
     branches: [ main ]
     paths:
-      - '**/*.py'
-      - 'requirements.txt'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
+      - 'backend/**/*.py'
+      - 'backend/requirements.txt'
+      - 'backend/**/Dockerfile'
+      - 'backend/docker-compose.yml'
 
 env:
-  DOCKER_IMAGE: smartlegalassistance/backend
   DOCKER_TAG: ${{ github.sha }}
 
 jobs:
@@ -29,15 +28,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
     
-    - name: Ensure settings __init__.py is properly configured
-      run: |
-        if [ -z "$(cat config/settings/__init__.py)" ]; then
-          echo "Fixing empty settings/__init__.py file"
-          echo 'import os' > config/settings/__init__.py
-          echo '# Default to production settings, can be overridden by DJANGO_SETTINGS_MODULE env var' >> config/settings/__init__.py
-          echo 'from .production import *' >> config/settings/__init__.py
-        fi
-    
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
       
@@ -46,22 +36,66 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-        
-    - name: Build and push
+    
+    - name: Build and Push API Gateway
       uses: docker/build-push-action@v4
       with:
-        context: .
-        file: ./Dockerfile
+        context: ./backend/api-gateway
         push: ${{ github.event_name != 'pull_request' }}
         tags: |
-          ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
-          ${{ env.DOCKER_IMAGE }}:latest
-        cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
-        cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
+          smartlegalassistance/api-gateway:${{ env.DOCKER_TAG }}
+          smartlegalassistance/api-gateway:latest
+        cache-from: type=registry,ref=smartlegalassistance/api-gateway:buildcache
+        cache-to: type=registry,ref=smartlegalassistance/api-gateway:buildcache,mode=max
         
-    - name: Run tests
+    - name: Build and Push Auth Service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backend/auth-service
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: |
+          smartlegalassistance/auth-service:${{ env.DOCKER_TAG }}
+          smartlegalassistance/auth-service:latest
+        cache-from: type=registry,ref=smartlegalassistance/auth-service:buildcache
+        cache-to: type=registry,ref=smartlegalassistance/auth-service:buildcache,mode=max
+        
+    - name: Build and Push Attorney Service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backend/attorney-service
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: |
+          smartlegalassistance/attorney-service:${{ env.DOCKER_TAG }}
+          smartlegalassistance/attorney-service:latest
+        cache-from: type=registry,ref=smartlegalassistance/attorney-service:buildcache
+        cache-to: type=registry,ref=smartlegalassistance/attorney-service:buildcache,mode=max
+        
+    - name: Build and Push Client Service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backend/client-service
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: |
+          smartlegalassistance/client-service:${{ env.DOCKER_TAG }}
+          smartlegalassistance/client-service:latest
+        cache-from: type=registry,ref=smartlegalassistance/client-service:buildcache
+        cache-to: type=registry,ref=smartlegalassistance/client-service:buildcache,mode=max
+        
+    - name: Build and Push Document Service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backend/document-service
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: |
+          smartlegalassistance/document-service:${{ env.DOCKER_TAG }}
+          smartlegalassistance/document-service:latest
+        cache-from: type=registry,ref=smartlegalassistance/document-service:buildcache
+        cache-to: type=registry,ref=smartlegalassistance/document-service:buildcache,mode=max
+        
+    - name: Run backend tests
       run: |
-        docker run --rm ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} python manage.py test
+        cd backend
+        docker-compose -f docker-compose.yml run api-gateway python manage.py test
         
     - name: Update deployment
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
