@@ -1,4 +1,4 @@
-name: Build and Push Backend Docker Images
+name: Build and Push Backend Docker Image
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
     paths:
       - 'backend/**/*.py'
       - 'backend/requirements.txt'
-      - 'backend/**/Dockerfile'
+      - 'backend/Dockerfile'
       - 'backend/docker-compose.yml'
       - '.github/workflows/docker-build.yml'
   pull_request:
@@ -14,7 +14,7 @@ on:
     paths:
       - 'backend/**/*.py'
       - 'backend/requirements.txt'
-      - 'backend/**/Dockerfile'
+      - 'backend/Dockerfile'
       - 'backend/docker-compose.yml'
 
 env:
@@ -53,65 +53,21 @@ jobs:
         username: ${{ steps.docker-creds.outputs.username }}
         password: ${{ steps.docker-creds.outputs.token }}
     
-    - name: Build and Push API Gateway
+    - name: Build and Push Backend
       uses: docker/build-push-action@v4
       with:
-        context: ./backend/api-gateway
+        context: ./backend
+        file: ./backend/Dockerfile
         push: ${{ github.event_name != 'pull_request' }}
         tags: |
-          smartlegalassistance/api-gateway:${{ env.DOCKER_TAG }}
-          smartlegalassistance/api-gateway:latest
-        cache-from: type=registry,ref=smartlegalassistance/api-gateway:buildcache
-        cache-to: type=registry,ref=smartlegalassistance/api-gateway:buildcache,mode=max
-        
-    - name: Build and Push Auth Service
-      uses: docker/build-push-action@v4
-      with:
-        context: ./backend/auth-service
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: |
-          smartlegalassistance/auth-service:${{ env.DOCKER_TAG }}
-          smartlegalassistance/auth-service:latest
-        cache-from: type=registry,ref=smartlegalassistance/auth-service:buildcache
-        cache-to: type=registry,ref=smartlegalassistance/auth-service:buildcache,mode=max
-        
-    - name: Build and Push Attorney Service
-      uses: docker/build-push-action@v4
-      with:
-        context: ./backend/attorney-service
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: |
-          smartlegalassistance/attorney-service:${{ env.DOCKER_TAG }}
-          smartlegalassistance/attorney-service:latest
-        cache-from: type=registry,ref=smartlegalassistance/attorney-service:buildcache
-        cache-to: type=registry,ref=smartlegalassistance/attorney-service:buildcache,mode=max
-        
-    - name: Build and Push Client Service
-      uses: docker/build-push-action@v4
-      with:
-        context: ./backend/client-service
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: |
-          smartlegalassistance/client-service:${{ env.DOCKER_TAG }}
-          smartlegalassistance/client-service:latest
-        cache-from: type=registry,ref=smartlegalassistance/client-service:buildcache
-        cache-to: type=registry,ref=smartlegalassistance/client-service:buildcache,mode=max
-        
-    - name: Build and Push Document Service
-      uses: docker/build-push-action@v4
-      with:
-        context: ./backend/document-service
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: |
-          smartlegalassistance/document-service:${{ env.DOCKER_TAG }}
-          smartlegalassistance/document-service:latest
-        cache-from: type=registry,ref=smartlegalassistance/document-service:buildcache
-        cache-to: type=registry,ref=smartlegalassistance/document-service:buildcache,mode=max
+          smartlegalassistance/backend:${{ env.DOCKER_TAG }}
+          smartlegalassistance/backend:latest
+        cache-from: type=registry,ref=smartlegalassistance/backend:buildcache
+        cache-to: type=registry,ref=smartlegalassistance/backend:buildcache,mode=max
         
     - name: Run backend tests
       run: |
-        cd backend
-        docker-compose -f docker-compose.yml run api-gateway python manage.py test
+        docker run --rm smartlegalassistance/backend:${{ env.DOCKER_TAG }} python manage.py test
         
     - name: Update deployment
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
