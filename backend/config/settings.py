@@ -4,6 +4,7 @@ and adds explicit ALLOWED_HOSTS to fix render.com deployment issues.
 """
 import os
 import sys
+import socket
 from pathlib import Path
 import dj_database_url
 
@@ -16,11 +17,48 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Override the database settings for better fallback handling
 print("Configuring database connection...")
 
+def check_host_connectivity(hostname, port=5432, timeout=3):
+    """Check if we can connect to the database host."""
+    try:
+        # Try to resolve the hostname first
+        socket.getaddrinfo(hostname, port)
+        
+        # Try to establish a socket connection
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(timeout)
+            sock.connect((hostname, port))
+        return True
+    except (socket.gaierror, socket.timeout, ConnectionRefusedError, OSError) as e:
+        print(f"⚠️ Connection failed to {hostname}:{port} - {e}")
+        return False
+
 try:
     # Try to parse the DATABASE_URL
     db_url = os.environ.get('DATABASE_URL', '')
+    
+    use_postgres = False
+    
     if db_url and 'postgres' in db_url:
-        print(f"Attempting to connect to PostgreSQL at {db_url.split('@')[1].split('/')[0] if '@' in db_url else 'unknown host'}")
+        # Try to extract the host from the URL for connectivity testing
+        try:
+            from urllib.parse import urlparse
+            parsed_url = urlparse(db_url)
+            db_host = parsed_url.hostname
+            db_port = parsed_url.port or 5432
+            
+            print(f"Testing connectivity to PostgreSQL at {db_host}:{db_port}...")
+            host_reachable = check_host_connectivity(db_host, db_port)
+            
+            if host_reachable:
+                print(f"✅ Host {db_host} is reachable")
+                use_postgres = True
+            else:
+                print(f"⚠️ Host {db_host} is not reachable, will use SQLite")
+        except Exception as e:
+            print(f"⚠️ Error checking database host: {e}")
+    
+    if use_postgres:
+        print(f"Configuring PostgreSQL connection...")
         db_config = dj_database_url.config(
             default=db_url,
             conn_max_age=600,
@@ -36,14 +74,19 @@ try:
             'default': db_config
         }
     else:
-        # No valid DATABASE_URL, use SQLite
-        print("No valid PostgreSQL DATABASE_URL found. Using SQLite instead.")
+        # No valid DATABASE_URL or connectivity issues, use SQLite
+        print("Using SQLite database for better reliability.")
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
                 'NAME': BASE_DIR / 'db.sqlite3',
             }
         }
+        
+        # Make sure the SQLite file directory exists
+        sqlite_dir = os.path.dirname(os.path.join(BASE_DIR, 'db.sqlite3'))
+        os.makedirs(sqlite_dir, exist_ok=True)
+        
 except Exception as e:
     print(f"⚠️ Database configuration error: {e}", file=sys.stderr)
     print("⚠️ Falling back to SQLite database", file=sys.stderr)
@@ -63,11 +106,24 @@ ALLOWED_HOSTS = [
     '0.0.0.0',
 ]
 
-# Also update CORS settings to match
+# Override CORS settings to ensure they have proper URL formatting
 CORS_ALLOWED_ORIGINS = [
     'https://smart-legal-assistance.onrender.com',
+    'https://www.smart-legal-assistance.onrender.com',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
 ]
 
-print(f"Loaded settings.py with ALLOWED_HOSTS: {ALLOWED_HOSTS}") 
+# Get any additional CORS origins from environment and ensure they're properly formatted
+if os.environ.get('CORS_ALLOWED_ORIGINS'):
+    try:
+        for origin in os.environ.get('CORS_ALLOWED_ORIGINS').split(','):
+            origin = origin.strip()
+            # Only add origins with proper formatting to avoid CORS errors
+            if origin and '://' in origin and origin not in CORS_ALLOWED_ORIGINS:
+                CORS_ALLOWED_ORIGINS.append(origin)
+    except Exception as e:
+        print(f"⚠️ Error parsing CORS_ALLOWED_ORIGINS: {e}", file=sys.stderr)
+
+print(f"Loaded settings.py with ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+print(f"CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}") 

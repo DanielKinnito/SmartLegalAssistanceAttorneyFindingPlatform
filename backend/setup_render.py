@@ -4,17 +4,75 @@ import sys
 import urllib.parse
 import socket
 import time
+import ipaddress
+
+def is_valid_ip(ip_str):
+    """Check if a string is a valid IP address (IPv4 or IPv6)."""
+    try:
+        ipaddress.ip_address(ip_str)
+        return True
+    except ValueError:
+        return False
+
+def test_dns_resolution(hostname):
+    """Test if hostname can be resolved through DNS."""
+    print(f"Testing DNS resolution for {hostname}...")
+    try:
+        # Try to resolve the hostname to an IP address
+        ip_addresses = socket.getaddrinfo(hostname, None)
+        if ip_addresses:
+            print(f"✅ Hostname resolution successful")
+            return True
+        return False
+    except socket.gaierror as e:
+        print(f"❌ Hostname resolution failed: {e}")
+        return False
 
 def test_database_connection(host, port, timeout=3):
     """Test if we can reach the database server."""
+    print(f"Testing connection to {host}:{port}...")
+    
+    # First check if host is already an IP address
+    is_ip = is_valid_ip(host)
+    
+    # If not an IP, try to resolve it
+    if not is_ip and not test_dns_resolution(host):
+        print(f"❌ Could not resolve hostname: {host}")
+        print("Checking with alternative DNS servers...")
+        # We failed to resolve using system DNS, but we'll still try to connect
+        # in case there are issues with DNS resolution
+    
     try:
+        # Try IPv4 connection
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(timeout)
         result = sock.connect_ex((host, port))
         sock.close()
-        return result == 0
+        
+        if result == 0:
+            print(f"✅ IPv4 connection successful")
+            return True
+        else:
+            print(f"❌ IPv4 connection failed with error {result}")
+            
+            # Try IPv6 connection as fallback
+            try:
+                sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+                sock.settimeout(timeout)
+                result = sock.connect_ex((host, port, 0, 0))
+                sock.close()
+                
+                if result == 0:
+                    print(f"✅ IPv6 connection successful")
+                    return True
+                else:
+                    print(f"❌ IPv6 connection also failed with error {result}")
+            except Exception as e:
+                print(f"❌ IPv6 connection error: {e}")
+            
+            return False
     except Exception as e:
-        print(f"Connection test error: {e}")
+        print(f"❌ Connection test error: {e}")
         return False
 
 def setup_render_environment():
@@ -24,45 +82,64 @@ def setup_render_environment():
     """
     print("Setting up Render deployment environment...")
     
-    # Explicitly set the allowed hosts to include the render.com domain
-    # This overrides any environment variable that might be set
-    allowed_hosts = os.environ.get('ALLOWED_HOSTS', '')
-    required_host = 'smart-legal-assistance.onrender.com'
+    # Define required hosts with proper formatting (no spaces, correct URL format)
+    required_hosts = [
+        'localhost',
+        '127.0.0.1',
+        '0.0.0.0',
+        'smart-legal-assistance.onrender.com',
+        'www.smart-legal-assistance.onrender.com'
+    ]
     
-    # Make sure our required host is in the ALLOWED_HOSTS
-    if required_host not in allowed_hosts:
-        if allowed_hosts:
-            allowed_hosts = f"{allowed_hosts},{required_host}"
-        else:
-            allowed_hosts = required_host
+    # Build allowed hosts string, ensuring no duplicate entries
+    existing_hosts = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else []
+    allowed_hosts = []
     
-    # Add some other common values
-    for host in ['localhost', '127.0.0.1', '0.0.0.0', 'www.smart-legal-assistance.onrender.com']:
+    # Clean existing hosts (remove spaces, empty entries)
+    for host in existing_hosts:
+        host = host.strip()
+        if host and host not in allowed_hosts:
+            allowed_hosts.append(host)
+    
+    # Add required hosts if not already present
+    for host in required_hosts:
         if host not in allowed_hosts:
-            allowed_hosts = f"{allowed_hosts},{host}"
+            allowed_hosts.append(host)
     
     # Set the ALLOWED_HOSTS environment variable
-    os.environ['ALLOWED_HOSTS'] = allowed_hosts
-    print(f"ALLOWED_HOSTS set to: {allowed_hosts}")
+    os.environ['ALLOWED_HOSTS'] = ','.join(allowed_hosts)
+    print(f"ALLOWED_HOSTS set to: {os.environ['ALLOWED_HOSTS']}")
     
-    # Set up CORS settings
-    cors_hosts = os.environ.get('CORS_ALLOWED_ORIGINS', '')
-    required_cors = 'https://smart-legal-assistance.onrender.com'
+    # Define required CORS origins with proper formatting
+    required_cors = [
+        'https://smart-legal-assistance.onrender.com',
+        'https://www.smart-legal-assistance.onrender.com',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+    ]
     
-    # Make sure our required CORS host is in the CORS_ALLOWED_ORIGINS
-    if required_cors not in cors_hosts:
-        if cors_hosts:
-            cors_hosts = f"{cors_hosts},{required_cors}"
-        else:
-            cors_hosts = required_cors
+    # Build CORS allowed origins string, ensuring no duplicate entries
+    existing_cors = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if os.environ.get('CORS_ALLOWED_ORIGINS') else []
+    cors_origins = []
     
-    # Add localhost for development
-    for cors in ['http://localhost:3000', 'http://127.0.0.1:3000']:
-        if cors not in cors_hosts:
-            cors_hosts = f"{cors_hosts},{cors}"
+    # Clean existing CORS origins (remove spaces, empty entries, ensure valid URLs)
+    for origin in existing_cors:
+        origin = origin.strip()
+        if origin and origin not in cors_origins:
+            # Ensure each origin has a scheme
+            if origin and '://' not in origin and origin not in ['localhost', '127.0.0.1']:
+                # Skip invalid origins that can't be fixed
+                continue
+            cors_origins.append(origin)
     
-    os.environ['CORS_ALLOWED_ORIGINS'] = cors_hosts
-    print(f"CORS_ALLOWED_ORIGINS set to: {cors_hosts}")
+    # Add required CORS origins if not already present
+    for origin in required_cors:
+        if origin not in cors_origins:
+            cors_origins.append(origin)
+    
+    # Set the CORS_ALLOWED_ORIGINS environment variable
+    os.environ['CORS_ALLOWED_ORIGINS'] = ','.join(cors_origins)
+    print(f"CORS_ALLOWED_ORIGINS set to: {os.environ['CORS_ALLOWED_ORIGINS']}")
     
     # Check if we have a DATABASE_URL
     database_url = os.environ.get('DATABASE_URL', '')
@@ -79,17 +156,42 @@ def setup_render_environment():
                 print("Falling back to SQLite")
                 os.environ['DATABASE_URL'] = 'sqlite:///db.sqlite3'
             else:
-                # Try to connect to the database server
+                # Extract host and port
                 db_host = parsed_url.hostname
                 db_port = parsed_url.port or 5432
                 
+                if not db_host:
+                    print("WARNING: No hostname found in DATABASE_URL")
+                    print("Falling back to SQLite")
+                    os.environ['DATABASE_URL'] = 'sqlite:///db.sqlite3'
+                    return
+                
+                # Test connection to database server
                 print(f"Testing connection to PostgreSQL at {db_host}:{db_port}...")
-                if not test_database_connection(db_host, db_port):
+                connection_successful = test_database_connection(db_host, db_port)
+                
+                if not connection_successful:
                     print(f"WARNING: Could not connect to database at {db_host}:{db_port}")
                     print("Falling back to SQLite")
                     os.environ['DATABASE_URL'] = 'sqlite:///db.sqlite3'
                 else:
                     print(f"Successfully connected to database at {db_host}:{db_port}")
+                    
+                    # Add a diagnostic log entry about the database host
+                    try:
+                        with open('db_connection_test.log', 'w') as f:
+                            f.write(f"Database host: {db_host}\n")
+                            f.write(f"Database port: {db_port}\n")
+                            
+                            # Try to get IP address for the hostname
+                            try:
+                                ip_addresses = socket.getaddrinfo(db_host, None)
+                                for family, _, _, _, addr in ip_addresses:
+                                    f.write(f"Resolved IP ({family}): {addr[0]}\n")
+                            except Exception as e:
+                                f.write(f"Failed to resolve hostname: {e}\n")
+                    except Exception as e:
+                        print(f"Error writing connection log: {e}")
         except Exception as e:
             print(f"ERROR parsing DATABASE_URL: {e}")
             print("Falling back to SQLite")
