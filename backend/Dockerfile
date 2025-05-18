@@ -15,7 +15,7 @@ ENV DOCKER_BUILDKIT=1
 # Install system dependencies including network tools
 RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc libpq-dev curl python3-dev libffi-dev \
-    dnsutils iputils-ping net-tools iproute2 traceroute netcat \
+    dnsutils iputils-ping net-tools iproute2 traceroute netcat-openbsd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
