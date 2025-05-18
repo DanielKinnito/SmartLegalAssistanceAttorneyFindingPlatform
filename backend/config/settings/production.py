@@ -25,7 +25,27 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+CORS_ALLOWED_ORIGINS = []
+
+# Get CORS origins from environment
+cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+if cors_origins:
+    cors_list = cors_origins.split(',')
+    # Make sure each origin has a scheme
+    for origin in cors_list:
+        origin = origin.strip()
+        if origin:
+            if not origin.startswith(('http://', 'https://')):
+                # Add https:// to origins without a scheme
+                origin = f"https://{origin}"
+            CORS_ALLOWED_ORIGINS.append(origin)
+
+# Add default origins for safety
+if not CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS = [
+        'https://smart-legal-assistance.onrender.com',
+        'https://www.smart-legal-assistance.onrender.com'
+    ]
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

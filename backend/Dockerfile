@@ -8,6 +8,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=config.settings.production
+ENV PORT=8000
 # Fix for IPv6 vs IPv4 issues
 ENV DOCKER_BUILDKIT=1
 
@@ -42,16 +43,16 @@ EXPOSE 8000
 
 # Create startup script
 RUN echo '#!/bin/bash\n\
+# Run environment setup check\n\
+python setup_render.py\n\
+# Run migrations and collect static files\n\
 python manage.py migrate --noinput\n\
 python manage.py collectstatic --noinput\n\
 # Create a superuser if it does not exist\n\
-python -c "import os; \
-from django.contrib.auth import get_user_model; \
-User = get_user_model(); \
-User.objects.filter(email=os.environ.get('\''ADMIN_EMAIL'\'', '\''admin@legalassistance.com'\'')).exists() or \
-User.objects.create_superuser(os.environ.get('\''ADMIN_EMAIL'\'', '\''admin@legalassistance.com'\''), \
-                                os.environ.get('\''ADMIN_PASSWORD'\'', '\''admin@123'\''))" || true\n\
-gunicorn --bind 0.0.0.0:8000 config.wsgi:application' > /app/entrypoint.sh \
+echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(email='\''$ADMIN_EMAIL'\'').exists() or User.objects.create_superuser('\''$ADMIN_EMAIL'\'', '\''$ADMIN_PASSWORD'\'')" | python manage.py shell\n\
+# Start Gunicorn with the PORT environment variable\n\
+echo "Starting server on port $PORT..."\n\
+gunicorn --bind 0.0.0.0:$PORT config.wsgi:application' > /app/entrypoint.sh \
     && chmod +x /app/entrypoint.sh
 
 # Start server

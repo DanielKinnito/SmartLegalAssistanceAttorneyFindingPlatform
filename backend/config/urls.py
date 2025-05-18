@@ -2,9 +2,11 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework.documentation import include_docs_urls
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
+from django.views.generic import RedirectView
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -35,15 +37,16 @@ urlpatterns = [
     path('api/chatbot/', include('apps.chatbot.urls')),
     path('api/documents/', include('apps.document_generation.urls')),
     
-    # API documentation - removing include_docs_urls since it requires coreapi
-    # path('api/docs/', include_docs_urls(title='Smart Legal Assistance API')),
+    # API documentation
+    path('api/docs/', include_docs_urls(title='Smart Legal Assistance API')),
     
-    # Using Swagger documentation instead for all API docs
+    # Swagger documentation
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-    # Adding a redirect for api/docs/ to swagger
-    path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='api-docs'),
+    
+    # Redirect root to Swagger UI
+    path('', RedirectView.as_view(url='/swagger/', permanent=False), name='index'),
 ]
 
 # Serve media files during development
