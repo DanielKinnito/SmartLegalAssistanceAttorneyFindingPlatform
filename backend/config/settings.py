@@ -71,7 +71,28 @@ try:
     
     use_postgres = False
     
-    if db_url and 'postgres' in db_url:
+    if db_url and ('postgres' in db_url or 'postgresql' in db_url):
+        # Fix malformed DATABASE_URL that includes "DATABASE_URL=" prefix
+        if db_url.startswith('DATABASE_URL='):
+            print("Removing 'DATABASE_URL=' prefix from connection string")
+            db_url = db_url[len('DATABASE_URL='):]
+            os.environ['DATABASE_URL'] = db_url
+        
+        # Fix DATABASE_URL with missing scheme or improper formatting
+        if not (db_url.startswith('postgresql://') or db_url.startswith('postgres://')):
+            if '@' in db_url:
+                print("DATABASE_URL is missing proper scheme, fixing it")
+                # If it's missing the scheme completely
+                if not db_url.startswith('postgresql:') and not db_url.startswith('postgres:'):
+                    db_url = 'postgresql://' + db_url
+                # If it has scheme without slashes (postgresql: instead of postgresql://)
+                elif db_url.startswith('postgresql:') and not db_url.startswith('postgresql://'):
+                    db_url = db_url.replace('postgresql:', 'postgresql://')
+                elif db_url.startswith('postgres:') and not db_url.startswith('postgres://'):
+                    db_url = db_url.replace('postgres:', 'postgres://')
+                
+                os.environ['DATABASE_URL'] = db_url
+        
         # Check if this is a direct Supabase connection that might need conversion
         if 'iubskuvezsqbqqjqnvla.supabase.co' in db_url and 'pooler.supabase.com' not in db_url:
             # Convert to pooler URL for IPv4 compatibility
@@ -96,7 +117,18 @@ try:
             print(f"⚠️ Error checking database host: {e}")
     
     if use_postgres:
-        print(f"Configuring PostgreSQL connection...")
+        print(f"Configuring PostgreSQL connection with URL: {db_url.split('@')[1] if '@' in db_url else '***'}")
+        # Ensure the URL is properly formatted for dj_database_url
+        if not (db_url.startswith('postgresql://') or db_url.startswith('postgres://')):
+            print(f"WARNING: Fixing malformed DATABASE_URL")
+            if db_url.startswith('postgresql:'):
+                db_url = db_url.replace('postgresql:', 'postgresql://')
+            elif db_url.startswith('postgres:'):
+                db_url = db_url.replace('postgres:', 'postgres://')
+            else:
+                db_url = 'postgresql://' + db_url
+            os.environ['DATABASE_URL'] = db_url
+            
         db_config = dj_database_url.config(
             default=db_url,
             conn_max_age=600,

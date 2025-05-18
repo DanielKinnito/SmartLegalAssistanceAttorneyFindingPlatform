@@ -208,14 +208,24 @@ def setup_render_environment():
             if database_url.startswith('DATABASE_URL='):
                 print("Removing 'DATABASE_URL=' prefix from connection string")
                 database_url = database_url[len('DATABASE_URL='):]
-                os.environ['DATABASE_URL'] = database_url
             
-            # Fix DATABASE_URL with missing scheme
-            if not database_url.startswith('postgresql://') and not database_url.startswith('postgres://'):
-                if '@' in database_url and ':' in database_url:
-                    print("DATABASE_URL is missing scheme, adding 'postgresql://'")
-                    database_url = 'postgresql://' + database_url
-                    os.environ['DATABASE_URL'] = database_url
+            # Fix DATABASE_URL with missing or improper scheme
+            if not (database_url.startswith('postgresql://') or database_url.startswith('postgres://')):
+                if '@' in database_url:
+                    # If it has scheme without slashes (postgresql: instead of postgresql://)
+                    if database_url.startswith('postgresql:') and not database_url.startswith('postgresql://'):
+                        print("DATABASE_URL has improper scheme format, fixing it")
+                        database_url = database_url.replace('postgresql:', 'postgresql://')
+                    elif database_url.startswith('postgres:') and not database_url.startswith('postgres://'):
+                        print("DATABASE_URL has improper scheme format, fixing it")
+                        database_url = database_url.replace('postgres:', 'postgres://')
+                    # If it's missing the scheme completely
+                    elif not database_url.startswith('postgresql:') and not database_url.startswith('postgres:'):
+                        print("DATABASE_URL is missing scheme, adding 'postgresql://'")
+                        database_url = 'postgresql://' + database_url
+                    
+            # Store the fixed URL back in the environment
+            os.environ['DATABASE_URL'] = database_url
             
             # Make sure the DATABASE_URL specifically uses the Transaction pooler for Render
             if 'iubskuvezsqbqqjqnvla' in database_url and 'aws-0-eu-central-1.pooler.supabase.com:6543' not in database_url:

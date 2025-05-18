@@ -39,11 +39,38 @@ print(f"Production ALLOWED_HOSTS: {ALLOWED_HOSTS}")
 
 # Database configuration
 try:
+    # Get and fix the DATABASE_URL if needed
+    database_url = os.environ.get('DATABASE_URL', '')
+    
+    # Fix malformed DATABASE_URL that includes "DATABASE_URL=" prefix
+    if database_url.startswith('DATABASE_URL='):
+        print("Removing 'DATABASE_URL=' prefix from connection string")
+        database_url = database_url[len('DATABASE_URL='):]
+        os.environ['DATABASE_URL'] = database_url
+    
+    # Fix DATABASE_URL with missing or improper scheme
+    if database_url and not (database_url.startswith('postgresql://') or database_url.startswith('postgres://')):
+        if '@' in database_url:
+            # If it has scheme without slashes (postgresql: instead of postgresql://)
+            if database_url.startswith('postgresql:') and not database_url.startswith('postgresql://'):
+                print("DATABASE_URL has improper scheme format, fixing it")
+                database_url = database_url.replace('postgresql:', 'postgresql://')
+            elif database_url.startswith('postgres:') and not database_url.startswith('postgres://'):
+                print("DATABASE_URL has improper scheme format, fixing it")
+                database_url = database_url.replace('postgres:', 'postgres://')
+            # If it's missing the scheme completely
+            elif not database_url.startswith('postgresql:') and not database_url.startswith('postgres:'):
+                print("DATABASE_URL is missing scheme, adding 'postgresql://'")
+                database_url = 'postgresql://' + database_url
+                
+            os.environ['DATABASE_URL'] = database_url
+    
     db_config = dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+        default=database_url or None,
         conn_max_age=600,
         conn_health_checks=True,
     )
+    
     if db_config:
         DATABASES = {
             'default': db_config
