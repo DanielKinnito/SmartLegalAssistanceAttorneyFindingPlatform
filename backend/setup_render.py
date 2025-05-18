@@ -2,6 +2,20 @@
 import os
 import sys
 import urllib.parse
+import socket
+import time
+
+def test_database_connection(host, port, timeout=3):
+    """Test if we can reach the database server."""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex((host, port))
+        sock.close()
+        return result == 0
+    except Exception as e:
+        print(f"Connection test error: {e}")
+        return False
 
 def setup_render_environment():
     """
@@ -51,7 +65,7 @@ def setup_render_environment():
     print(f"CORS_ALLOWED_ORIGINS set to: {cors_hosts}")
     
     # Check if we have a DATABASE_URL
-    database_url = os.environ.get('DATABASE_URL')
+    database_url = os.environ.get('DATABASE_URL', '')
     if not database_url:
         print("WARNING: No DATABASE_URL found, will use SQLite")
         os.environ['DATABASE_URL'] = 'sqlite:///db.sqlite3'
@@ -59,10 +73,23 @@ def setup_render_environment():
         try:
             # Validate if the database URL is properly formatted
             parsed_url = urllib.parse.urlparse(database_url)
+            
             if parsed_url.scheme not in ('postgres', 'postgresql'):
                 print(f"WARNING: Invalid database URL scheme: {parsed_url.scheme}")
                 print("Falling back to SQLite")
                 os.environ['DATABASE_URL'] = 'sqlite:///db.sqlite3'
+            else:
+                # Try to connect to the database server
+                db_host = parsed_url.hostname
+                db_port = parsed_url.port or 5432
+                
+                print(f"Testing connection to PostgreSQL at {db_host}:{db_port}...")
+                if not test_database_connection(db_host, db_port):
+                    print(f"WARNING: Could not connect to database at {db_host}:{db_port}")
+                    print("Falling back to SQLite")
+                    os.environ['DATABASE_URL'] = 'sqlite:///db.sqlite3'
+                else:
+                    print(f"Successfully connected to database at {db_host}:{db_port}")
         except Exception as e:
             print(f"ERROR parsing DATABASE_URL: {e}")
             print("Falling back to SQLite")

@@ -53,11 +53,35 @@ python setup_render.py\n\
 # Print debugging info\n\
 echo "DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE"\n\
 echo "ALLOWED_HOSTS: $ALLOWED_HOSTS"\n\
+echo "DATABASE_URL: ${DATABASE_URL//\:*@/:***@}"\n\
+\n\
+# Check if we can connect to the database\n\
+echo "Checking database connection..."\n\
+DATABASE_OK=false\n\
+if python -c "import sys; import django; django.setup(); from django.db import connection; connection.cursor(); sys.exit(0)" 2>/dev/null; then\n\
+    echo "Database connection successful."\n\
+    DATABASE_OK=true\n\
+else\n\
+    echo "⚠️ Database connection failed. Will continue with SQLite."\n\
+    export DATABASE_URL="sqlite:///db.sqlite3"\n\
+    echo "Now using: sqlite:///db.sqlite3"\n\
+fi\n\
 \n\
 # Run migrations with error handling\n\
-python manage.py migrate --noinput || {\n\
-  echo "Migration failed, but continuing deployment..."\n\
-}\n\
+echo "Running migrations..."\n\
+if ! python manage.py migrate --noinput; then\n\
+    echo "⚠️ Migration failed. Checking if we need to fall back to SQLite..."\n\
+    if [ "$DATABASE_OK" = true ]; then\n\
+        echo "Database was previously confirmed as working. This is a different issue."\n\
+    else\n\
+        echo "Falling back to SQLite database"\n\
+        export DATABASE_URL="sqlite:///db.sqlite3"\n\
+        echo "Trying migrations again with SQLite..."\n\
+        python manage.py migrate --noinput || {\n\
+            echo "⚠️ Migration still failed, but continuing deployment..."\n\
+        }\n\
+    fi\n\
+fi\n\
 \n\
 # Collect static files\n\
 python manage.py collectstatic --noinput\n\
