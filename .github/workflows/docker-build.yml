@@ -69,7 +69,11 @@ jobs:
         
     - name: Run backend tests
       run: |
-        docker run --rm ${{ env.DOCKER_REPO }}:${{ env.DOCKER_TAG }} python manage.py test
+        docker run --rm \
+          -e DEBUG=True \
+          -e DATABASE_URL=sqlite:///memory \
+          -e SECRET_KEY=test-key \
+          ${{ env.DOCKER_REPO }}:${{ env.DOCKER_TAG }} python manage.py test
         
     - name: Update deployment
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
