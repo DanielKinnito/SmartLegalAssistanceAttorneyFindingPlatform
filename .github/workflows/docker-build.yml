@@ -75,7 +75,9 @@ jobs:
           -e SECRET_KEY=test-key \
           -e CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://smart-legal-assistance.onrender.com \
           -e DJANGO_SETTINGS_MODULE=config.settings.test \
-          ${{ env.DOCKER_REPO }}:${{ env.DOCKER_TAG }} python manage.py test
+          --entrypoint bash \
+          ${{ env.DOCKER_REPO }}:${{ env.DOCKER_TAG }} \
+          -c "pip install coreapi coreschema && python manage.py test"
     
     # Only enable this step once you have set up the RENDER_DEPLOY_HOOK secret or URL
     # - name: Update deployment

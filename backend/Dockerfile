@@ -26,6 +26,9 @@ RUN pip install --upgrade pip \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Explicitly install coreapi for API schema documentation
+RUN pip install coreapi coreschema
+
 # Copy project files
 COPY . .
 
