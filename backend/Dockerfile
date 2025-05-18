@@ -48,11 +48,22 @@ EXPOSE 8000
 RUN echo '#!/bin/bash\n\
 # Run environment setup check\n\
 python setup_render.py\n\
-# Run migrations and collect static files\n\
-python manage.py migrate --noinput\n\
+\n\
+# Run migrations with error handling\n\
+python manage.py migrate --noinput || {\n\
+  echo "Migration failed, but continuing deployment..."\n\
+}\n\
+\n\
+# Collect static files\n\
 python manage.py collectstatic --noinput\n\
+\n\
 # Create a superuser if it does not exist\n\
-echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(email='\''$ADMIN_EMAIL'\'').exists() or User.objects.create_superuser('\''$ADMIN_EMAIL'\'', '\''$ADMIN_PASSWORD'\'')" | python manage.py shell\n\
+{\n\
+  echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(email='\''$ADMIN_EMAIL'\'').exists() or User.objects.create_superuser('\''$ADMIN_EMAIL'\'', '\''$ADMIN_PASSWORD'\'')" | python manage.py shell\n\
+} || {\n\
+  echo "Could not create superuser, but continuing..."\n\
+}\n\
+\n\
 # Start Gunicorn with the PORT environment variable\n\
 echo "Starting server on port $PORT..."\n\
 gunicorn --bind 0.0.0.0:$PORT config.wsgi:application' > /app/entrypoint.sh \
