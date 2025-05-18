@@ -6,7 +6,20 @@ import sys
 # Security settings
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fallback-key-for-render')
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,smart-legal-assistance.onrender.com').split(',')
+
+# Parse ALLOWED_HOSTS with special handling for the render.com domain
+allowed_hosts_str = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,smart-legal-assistance.onrender.com')
+ALLOWED_HOSTS = allowed_hosts_str.split(',')
+
+# Make sure required host is in ALLOWED_HOSTS
+if 'smart-legal-assistance.onrender.com' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('smart-legal-assistance.onrender.com')
+
+# Add www subdomain as well
+if 'www.smart-legal-assistance.onrender.com' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('www.smart-legal-assistance.onrender.com')
+
+print(f"Production ALLOWED_HOSTS: {ALLOWED_HOSTS}")
 
 # Database configuration
 try:
@@ -47,7 +60,20 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,https://smart-legal-assistance.onrender.com').split(',')
+
+# Parse CORS_ALLOWED_ORIGINS
+cors_origins_str = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,https://smart-legal-assistance.onrender.com')
+CORS_ALLOWED_ORIGINS = cors_origins_str.split(',')
+
+# Make sure required origin is in CORS_ALLOWED_ORIGINS
+if 'https://smart-legal-assistance.onrender.com' not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append('https://smart-legal-assistance.onrender.com')
+
+# Add www subdomain as well
+if 'https://www.smart-legal-assistance.onrender.com' not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append('https://www.smart-legal-assistance.onrender.com')
+
+print(f"Production CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
 
 # Email settings
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')

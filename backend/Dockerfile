@@ -7,7 +7,7 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV DJANGO_SETTINGS_MODULE=config.settings.production
+ENV DJANGO_SETTINGS_MODULE=config.settings
 ENV PORT=8000
 # Fix for IPv6 vs IPv4 issues
 ENV DOCKER_BUILDKIT=1
@@ -46,8 +46,13 @@ EXPOSE 8000
 
 # Create startup script
 RUN echo '#!/bin/bash\n\
+echo "Starting deployment process..."\n\
 # Run environment setup check\n\
 python setup_render.py\n\
+\n\
+# Print debugging info\n\
+echo "DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE"\n\
+echo "ALLOWED_HOSTS: $ALLOWED_HOSTS"\n\
 \n\
 # Run migrations with error handling\n\
 python manage.py migrate --noinput || {\n\
@@ -66,6 +71,7 @@ python manage.py collectstatic --noinput\n\
 \n\
 # Start Gunicorn with the PORT environment variable\n\
 echo "Starting server on port $PORT..."\n\
+echo "Using settings module: $DJANGO_SETTINGS_MODULE"\n\
 gunicorn --bind 0.0.0.0:$PORT config.wsgi:application' > /app/entrypoint.sh \
     && chmod +x /app/entrypoint.sh
 
