@@ -73,6 +73,7 @@ jobs:
           -e DEBUG=True \
           -e DATABASE_URL=sqlite:///memory \
           -e SECRET_KEY=test-key \
+          -e CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://smart-legal-assistance.onrender.com/ \
           ${{ env.DOCKER_REPO }}:${{ env.DOCKER_TAG }} python manage.py test
         
     - name: Update deployment
