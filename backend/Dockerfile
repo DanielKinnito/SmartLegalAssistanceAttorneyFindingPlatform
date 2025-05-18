@@ -111,10 +111,11 @@ if ! python manage.py migrate --noinput; then\n\
     else\n\
         echo "Falling back to SQLite database"\n\
         export DATABASE_URL="sqlite:///db.sqlite3"\n\
-        echo "Trying migrations again with SQLite..."\n\
-        python manage.py migrate --noinput || {\n\
+        echo "Trying migrations again with SQLite and run-syncdb..."\n\
+        python manage.py migrate --noinput --run-syncdb || {\n\
             echo "⚠️ Migration still failed. Trying to initialize database..."\n\
-            python -c "from django.core.management.utils import get_random_secret_key; from pathlib import Path; dbfile = Path(\\"/app/db.sqlite3\\"); dbfile.unlink(missing_ok=True); print(\\"Created new SQLite database\\")"\n\
+            rm -f /app/db.sqlite3\n\
+            echo "Created fresh SQLite database"\n\
             python manage.py migrate --noinput --run-syncdb || {\n\
                 echo "⚠️ Database initialization failed, but continuing deployment..."\n\
             }\n\

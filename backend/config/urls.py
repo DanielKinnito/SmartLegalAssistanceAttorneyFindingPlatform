@@ -39,10 +39,15 @@ urlpatterns = [
     # API documentation - using Swagger instead of include_docs_urls
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='api-docs'),
     
-    # Swagger documentation
+    # Swagger documentation - multiple URL patterns for flexibility
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    
+    # Additional Swagger URLs that might be used
+    path('api/schema/', schema_view.with_ui('swagger', cache_timeout=0), name='api-schema'),
+    path('api/schema/swagger-ui/', schema_view.with_ui('swagger', cache_timeout=0), name='api-schema-swagger'),
+    path('api/schema/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='api-schema-redoc'),
     
     # Redirect root to Swagger UI
     path('', RedirectView.as_view(url='/swagger/', permanent=False), name='index'),

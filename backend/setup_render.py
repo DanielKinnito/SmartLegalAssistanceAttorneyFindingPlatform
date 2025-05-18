@@ -5,6 +5,7 @@ import urllib.parse
 import socket
 import time
 import ipaddress
+import sqlite3
 
 # Supabase connection URLs
 # Direct connection (IPv6 only)
@@ -130,6 +131,17 @@ def setup_render_environment():
     # Clean existing hosts (remove spaces, empty entries)
     for host in existing_hosts:
         host = host.strip()
+        # Remove any protocol and path from URLs
+        if '://' in host:
+            # Extract domain part from URL
+            try:
+                parsed = urllib.parse.urlparse(host)
+                host = parsed.netloc
+                print(f"Converted URL to domain: {host} (from {host})")
+            except Exception:
+                print(f"Skipping invalid host URL: {host}")
+                continue
+        
         if host and host not in allowed_hosts:
             allowed_hosts.append(host)
     
@@ -158,11 +170,11 @@ def setup_render_environment():
     for origin in existing_cors:
         origin = origin.strip()
         if origin and origin not in cors_origins:
-            # Ensure each origin has a scheme
-            if origin and '://' not in origin and origin not in ['localhost', '127.0.0.1']:
-                # Skip invalid origins that can't be fixed
-                continue
-            cors_origins.append(origin)
+            # Only add origins with a valid scheme or localhost/127.0.0.1
+            if '://' in origin or origin in ['localhost', '127.0.0.1']:
+                cors_origins.append(origin)
+            else:
+                print(f"Skipping invalid CORS origin (missing scheme): {origin}")
     
     # Add required CORS origins if not already present
     for origin in required_cors:
@@ -178,8 +190,27 @@ def setup_render_environment():
     if not database_url:
         print("WARNING: No DATABASE_URL found, will use SQLite")
         os.environ['DATABASE_URL'] = 'sqlite:///db.sqlite3'
+        
+        # Ensure SQLite file is properly created
+        try:
+            if not os.path.exists('db.sqlite3'):
+                print("Creating new SQLite database file...")
+                conn = sqlite3.connect('db.sqlite3')
+                conn.close()
+                print("✅ SQLite database file created")
+        except Exception as e:
+            print(f"Error creating SQLite database: {e}")
     else:
         try:
+            print(f"Parsing DATABASE_URL: {database_url.replace(database_url.split('@')[0], '***')}")
+            
+            # Fix DATABASE_URL with missing scheme
+            if not database_url.startswith('postgresql://') and not database_url.startswith('postgres://'):
+                if '@' in database_url and ':' in database_url:
+                    print("DATABASE_URL is missing scheme, adding 'postgresql://'")
+                    database_url = 'postgresql://' + database_url
+                    os.environ['DATABASE_URL'] = database_url
+            
             # Check if we need to convert to a pooler URL for IPv4 compatibility
             if 'iubskuvezsqbqqjqnvla.supabase.co' in database_url and 'pooler.supabase.com' not in database_url:
                 print("Direct Supabase connection detected, converting to IPv4-compatible Transaction pooler URL...")
@@ -189,6 +220,7 @@ def setup_render_environment():
             
             # Validate if the database URL is properly formatted
             parsed_url = urllib.parse.urlparse(database_url)
+            print(f"Parsed URL scheme: {parsed_url.scheme}, netloc: {parsed_url.netloc}, host: {parsed_url.hostname}, port: {parsed_url.port}")
             
             if parsed_url.scheme not in ('postgres', 'postgresql'):
                 print(f"WARNING: Invalid database URL scheme: {parsed_url.scheme}")
