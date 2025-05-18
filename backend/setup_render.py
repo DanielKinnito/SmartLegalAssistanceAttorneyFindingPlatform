@@ -6,6 +6,16 @@ import socket
 import time
 import ipaddress
 
+# Supabase connection URLs
+# Direct connection (IPv6 only)
+SUPABASE_DIRECT_TEMPLATE = "postgresql://postgres:[password]@db.iubskuvezsqbqqjqnvla.supabase.co:5432/postgres"
+
+# Transaction pooler (recommended for web apps, IPv4 compatible)
+SUPABASE_TRANSACTION_POOLER_TEMPLATE = "postgresql://postgres.iubskuvezsqbqqjqnvla:[password]@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
+
+# Session pooler (alternative for IPv4 compatibility)
+SUPABASE_SESSION_POOLER_TEMPLATE = "postgresql://postgres.iubskuvezsqbqqjqnvla:[password]@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
+
 def is_valid_ip(ip_str):
     """Check if a string is a valid IP address (IPv4 or IPv6)."""
     try:
@@ -74,6 +84,28 @@ def test_database_connection(host, port, timeout=3):
     except Exception as e:
         print(f"❌ Connection test error: {e}")
         return False
+
+def convert_to_pooler_url(db_url):
+    """Convert a direct Supabase connection URL to a pooler URL for IPv4 compatibility."""
+    try:
+        parsed_url = urllib.parse.urlparse(db_url)
+        
+        # Check if this is a Supabase direct connection
+        if parsed_url.hostname and 'iubskuvezsqbqqjqnvla.supabase.co' in parsed_url.hostname:
+            print("Converting direct Supabase URL to IPv4-compatible Transaction pooler URL...")
+            
+            # Extract password from original URL
+            password = parsed_url.password
+            
+            if password:
+                # Construct the transaction pooler URL with the same password
+                pooler_url = SUPABASE_TRANSACTION_POOLER_TEMPLATE.format(password=password)
+                return pooler_url
+    except Exception as e:
+        print(f"Error converting to pooler URL: {e}")
+    
+    # Return original URL if conversion failed or not needed
+    return db_url
 
 def setup_render_environment():
     """
@@ -148,6 +180,13 @@ def setup_render_environment():
         os.environ['DATABASE_URL'] = 'sqlite:///db.sqlite3'
     else:
         try:
+            # Check if we need to convert to a pooler URL for IPv4 compatibility
+            if 'iubskuvezsqbqqjqnvla.supabase.co' in database_url and 'pooler.supabase.com' not in database_url:
+                print("Direct Supabase connection detected, converting to IPv4-compatible Transaction pooler URL...")
+                database_url = convert_to_pooler_url(database_url)
+                os.environ['DATABASE_URL'] = database_url
+                print("Using IPv4-compatible Supabase Transaction pooler connection")
+            
             # Validate if the database URL is properly formatted
             parsed_url = urllib.parse.urlparse(database_url)
             

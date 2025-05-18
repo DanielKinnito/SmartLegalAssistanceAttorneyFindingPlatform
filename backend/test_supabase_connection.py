@@ -4,7 +4,24 @@ import sys
 import socket
 import time
 import psycopg2
+import argparse
 from urllib.parse import urlparse
+
+# Supabase connection URLs
+# Direct connection (IPv6 only)
+SUPABASE_DIRECT = "postgresql://postgres:[YOUR-PASSWORD]@db.iubskuvezsqbqqjqnvla.supabase.co:5432/postgres"
+
+# Transaction pooler (recommended for web apps, IPv4 compatible) - port 6543
+TRANSACTION_POOLER = "postgresql://postgres.iubskuvezsqbqqjqnvla:[YOUR-PASSWORD]@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
+
+# Session pooler (alternative IPv4 connection) - port 5432
+SESSION_POOLER = "postgresql://postgres.iubskuvezsqbqqjqnvla:[YOUR-PASSWORD]@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
+
+def print_section(title):
+    """Print a section header for better readability."""
+    print("\n" + "=" * 60)
+    print(f" {title} ".center(60, "="))
+    print("=" * 60)
 
 def test_dns_resolution(hostname):
     """Test if the hostname can be resolved to an IP address."""
@@ -40,7 +57,7 @@ def test_socket_connection(hostname, port, timeout=5):
 
 def test_postgres_connection(db_url):
     """Test if we can connect to PostgreSQL using the database URL."""
-    print(f"Testing PostgreSQL connection with DATABASE_URL...")
+    print(f"Testing PostgreSQL connection...")
     
     # Parse the database URL but hide credentials in logs
     parsed_url = urlparse(db_url)
@@ -76,64 +93,115 @@ def test_postgres_connection(db_url):
         return False
 
 def main():
-    print("=== Supabase Connection Test ===")
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Test Supabase database connections")
+    parser.add_argument("--password", help="Supabase database password")
+    parser.add_argument("--direct", action="store_true", help="Test direct connection only")
+    parser.add_argument("--transaction", action="store_true", help="Test transaction pooler only")
+    parser.add_argument("--session", action="store_true", help="Test session pooler only")
+    args = parser.parse_args()
     
-    # Get database URL from environment
-    db_url = os.environ.get('DATABASE_URL', '')
-    if not db_url:
-        print("❌ No DATABASE_URL environment variable found")
-        return False
+    print_section("SUPABASE CONNECTION TEST")
     
-    # Parse the URL
-    try:
-        parsed_url = urlparse(db_url)
-        if parsed_url.scheme not in ('postgres', 'postgresql'):
-            print(f"❌ Invalid database URL scheme: {parsed_url.scheme}")
-            return False
+    # Get password from arguments or prompt
+    password = args.password
+    if not password:
+        # Try to get from DATABASE_URL environment variable
+        db_url = os.environ.get('DATABASE_URL', '')
+        if db_url:
+            print("Using credentials from DATABASE_URL environment variable")
+            parsed = urlparse(db_url)
+            password = parsed.password
         
-        hostname = parsed_url.hostname
-        port = parsed_url.port or 5432
+        # If still no password, prompt the user
+        if not password:
+            password = input("Enter your Supabase database password: ")
+    
+    # Replace placeholders with the actual password
+    direct_url = SUPABASE_DIRECT.replace('[YOUR-PASSWORD]', password)
+    transaction_url = TRANSACTION_POOLER.replace('[YOUR-PASSWORD]', password)
+    session_url = SESSION_POOLER.replace('[YOUR-PASSWORD]', password)
+    
+    results = {}
+    
+    # Test what was requested, or all connections if no specific test requested
+    if not (args.direct or args.transaction or args.session):
+        tests = [
+            ("DIRECT CONNECTION (IPv6 only)", direct_url, "db.iubskuvezsqbqqjqnvla.supabase.co", 5432),
+            ("TRANSACTION POOLER (IPv4 compatible, RECOMMENDED)", transaction_url, "aws-0-eu-central-1.pooler.supabase.com", 6543),
+            ("SESSION POOLER (IPv4 alternative)", session_url, "aws-0-eu-central-1.pooler.supabase.com", 5432)
+        ]
+    else:
+        tests = []
+        if args.direct:
+            tests.append(("DIRECT CONNECTION (IPv6 only)", direct_url, "db.iubskuvezsqbqqjqnvla.supabase.co", 5432))
+        if args.transaction:
+            tests.append(("TRANSACTION POOLER (IPv4 compatible, RECOMMENDED)", transaction_url, "aws-0-eu-central-1.pooler.supabase.com", 6543))
+        if args.session:
+            tests.append(("SESSION POOLER (IPv4 alternative)", session_url, "aws-0-eu-central-1.pooler.supabase.com", 5432))
+    
+    # Run the tests
+    for name, url, host, port in tests:
+        print_section(name)
+        print(f"Testing connection to {host}:{port}")
         
-        if not hostname:
-            print("❌ No hostname found in DATABASE_URL")
-            return False
+        dns_ok = test_dns_resolution(host)
         
-        print(f"Database host: {hostname}")
-        print(f"Database port: {port}")
+        if dns_ok:
+            socket_ok = test_socket_connection(host, port)
+            if socket_ok:
+                db_ok = test_postgres_connection(url)
+                results[name] = db_ok
+            else:
+                results[name] = False
+        else:
+            if "DIRECT" in name:
+                print("⚠️ DNS resolution failed for direct connection. This is expected if your network doesn't support IPv6.")
+            else:
+                print("⚠️ DNS resolution failed. Check your network connection and DNS settings.")
+            results[name] = False
+    
+    # Print summary
+    print_section("RESULTS SUMMARY")
+    
+    for name, result in results.items():
+        status = "✅ SUCCESS" if result else "❌ FAILED"
+        print(f"{name}: {status}")
+    
+    # Provide recommendations based on results
+    print_section("RECOMMENDATIONS")
+    
+    if results.get("TRANSACTION POOLER (IPv4 compatible, RECOMMENDED)", False):
+        print("✅ Your Transaction Pooler connection is working correctly.")
+        print("This is the RECOMMENDED connection for web applications.")
+        print("Update your DATABASE_URL in environment variables to:")
+        print(f"DATABASE_URL={TRANSACTION_POOLER.replace('[YOUR-PASSWORD]', '****')}")
         
-        # Test DNS resolution
-        if not test_dns_resolution(hostname):
-            print("\n🔍 Troubleshooting DNS issues:")
-            print("1. Check if the hostname is correct")
-            print("2. Try pinging the hostname from your local machine")
-            print("3. Check if Render.com can access your Supabase instance")
-            print("4. Ensure your Supabase database is not in maintenance mode")
-            return False
+        if not results.get("DIRECT CONNECTION (IPv6 only)", False):
+            print("\nYour direct connection failed, but that's expected if your network")
+            print("only supports IPv4 (common with many hosting providers like Render.com).")
         
-        # Test socket connection
-        if not test_socket_connection(hostname, port):
-            print("\n🔍 Troubleshooting connection issues:")
-            print("1. Check if the database server is running")
-            print("2. Check if the port is correct")
-            print("3. Check if there's a firewall blocking the connection")
-            print("4. Check if the database allows connections from Render.com's IP range")
-            return False
-        
-        # Test PostgreSQL connection
-        if not test_postgres_connection(db_url):
-            print("\n🔍 Troubleshooting PostgreSQL issues:")
-            print("1. Check if the username and password are correct")
-            print("2. Check if the database name exists")
-            print("3. Check if the user has appropriate permissions")
-            return False
-        
-        print("\n✅ All connection tests passed successfully!")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Error parsing DATABASE_URL: {e}")
-        return False
+        return 0
+    elif results.get("SESSION POOLER (IPv4 alternative)", False):
+        print("✅ Your Session Pooler connection is working correctly.")
+        print("This is the ALTERNATIVE connection for IPv4 networks.")
+        print("Update your DATABASE_URL in environment variables to:")
+        print(f"DATABASE_URL={SESSION_POOLER.replace('[YOUR-PASSWORD]', '****')}")
+        return 0
+    elif results.get("DIRECT CONNECTION (IPv6 only)", False):
+        print("✅ Your Direct Connection is working correctly.")
+        print("This indicates your network supports IPv6.")
+        print("Update your DATABASE_URL in environment variables to:")
+        print(f"DATABASE_URL={SUPABASE_DIRECT.replace('[YOUR-PASSWORD]', '****')}")
+        return 0
+    else:
+        print("❌ None of the connection methods succeeded.")
+        print("This could be due to:")
+        print("1. Incorrect database password")
+        print("2. Network connectivity issues")
+        print("3. Firewall blocking the connections")
+        print("4. Database server being down or not accessible from your location")
+        return 1
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1) 
+    sys.exit(main()) 

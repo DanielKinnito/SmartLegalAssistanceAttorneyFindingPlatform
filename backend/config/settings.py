@@ -7,6 +7,7 @@ import sys
 import socket
 from pathlib import Path
 import dj_database_url
+from urllib.parse import urlparse
 
 # Import all settings from production except database settings
 from config.settings.production import *
@@ -14,8 +15,40 @@ from config.settings.production import *
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Supabase connection URLs
+# Direct connection (IPv6 only)
+SUPABASE_DIRECT_TEMPLATE = "postgresql://postgres:[password]@db.iubskuvezsqbqqjqnvla.supabase.co:5432/postgres"
+
+# Transaction pooler (recommended for web apps, IPv4 compatible)
+SUPABASE_TRANSACTION_POOLER_TEMPLATE = "postgresql://postgres.iubskuvezsqbqqjqnvla:[password]@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
+
+# Session pooler (alternative for IPv4 compatibility)
+SUPABASE_SESSION_POOLER_TEMPLATE = "postgresql://postgres.iubskuvezsqbqqjqnvla:[password]@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
+
 # Override the database settings for better fallback handling
 print("Configuring database connection...")
+
+def convert_to_pooler_url(db_url):
+    """Convert a direct Supabase connection URL to a pooler URL if possible."""
+    try:
+        parsed = urlparse(db_url)
+        
+        # Check if this is a Supabase direct connection
+        if parsed.hostname and 'iubskuvezsqbqqjqnvla.supabase.co' in parsed.hostname:
+            print("Converting direct Supabase URL to IPv4-compatible transaction pooler URL...")
+            
+            # Extract password from original URL
+            password = parsed.password
+            
+            if password:
+                # Construct the transaction pooler URL with the same password
+                pooler_url = SUPABASE_TRANSACTION_POOLER_TEMPLATE.format(password=password)
+                return pooler_url
+    except Exception as e:
+        print(f"⚠️ Error converting to pooler URL: {e}")
+    
+    # Return original URL if conversion failed or not needed
+    return db_url
 
 def check_host_connectivity(hostname, port=5432, timeout=3):
     """Check if we can connect to the database host."""
@@ -39,9 +72,14 @@ try:
     use_postgres = False
     
     if db_url and 'postgres' in db_url:
+        # Check if this is a direct Supabase connection that might need conversion
+        if 'iubskuvezsqbqqjqnvla.supabase.co' in db_url and 'pooler.supabase.com' not in db_url:
+            # Convert to pooler URL for IPv4 compatibility
+            db_url = convert_to_pooler_url(db_url)
+            print(f"Using IPv4-compatible transaction pooler connection")
+        
         # Try to extract the host from the URL for connectivity testing
         try:
-            from urllib.parse import urlparse
             parsed_url = urlparse(db_url)
             db_host = parsed_url.hostname
             db_port = parsed_url.port or 5432
