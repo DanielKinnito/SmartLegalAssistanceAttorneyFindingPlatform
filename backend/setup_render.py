@@ -202,7 +202,13 @@ def setup_render_environment():
             print(f"Error creating SQLite database: {e}")
     else:
         try:
-            print(f"Parsing DATABASE_URL: {database_url.replace(database_url.split('@')[0], '***')}")
+            print(f"Original DATABASE_URL: {database_url.replace(database_url.split('@')[0] if '@' in database_url else database_url, '***')}")
+            
+            # Fix malformed DATABASE_URL that includes "DATABASE_URL=" prefix
+            if database_url.startswith('DATABASE_URL='):
+                print("Removing 'DATABASE_URL=' prefix from connection string")
+                database_url = database_url[len('DATABASE_URL='):]
+                os.environ['DATABASE_URL'] = database_url
             
             # Fix DATABASE_URL with missing scheme
             if not database_url.startswith('postgresql://') and not database_url.startswith('postgres://'):
@@ -211,16 +217,33 @@ def setup_render_environment():
                     database_url = 'postgresql://' + database_url
                     os.environ['DATABASE_URL'] = database_url
             
-            # Check if we need to convert to a pooler URL for IPv4 compatibility
-            if 'iubskuvezsqbqqjqnvla.supabase.co' in database_url and 'pooler.supabase.com' not in database_url:
-                print("Direct Supabase connection detected, converting to IPv4-compatible Transaction pooler URL...")
-                database_url = convert_to_pooler_url(database_url)
-                os.environ['DATABASE_URL'] = database_url
-                print("Using IPv4-compatible Supabase Transaction pooler connection")
+            # Make sure the DATABASE_URL specifically uses the Transaction pooler for Render
+            if 'iubskuvezsqbqqjqnvla' in database_url and 'aws-0-eu-central-1.pooler.supabase.com:6543' not in database_url:
+                print("Supabase URL detected but not using Transaction pooler, converting URL...")
+                
+                # Try to extract credentials from the existing URL
+                try:
+                    parsed = urllib.parse.urlparse(database_url)
+                    username = parsed.username
+                    password = parsed.password
+                    
+                    if username and password:
+                        # Construct the correct pooler URL
+                        if 'postgres.iubskuvezsqbqqjqnvla' not in username:
+                            pooler_username = 'postgres.iubskuvezsqbqqjqnvla'
+                        else:
+                            pooler_username = username
+                            
+                        new_url = f"postgresql://{pooler_username}:{password}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
+                        print(f"Using correct Transaction pooler URL (credentials masked)")
+                        database_url = new_url
+                        os.environ['DATABASE_URL'] = database_url
+                except Exception as e:
+                    print(f"Error extracting credentials: {e}")
             
             # Validate if the database URL is properly formatted
             parsed_url = urllib.parse.urlparse(database_url)
-            print(f"Parsed URL scheme: {parsed_url.scheme}, netloc: {parsed_url.netloc}, host: {parsed_url.hostname}, port: {parsed_url.port}")
+            print(f"Parsed URL scheme: {parsed_url.scheme}, netloc: {parsed_url.netloc}")
             
             if parsed_url.scheme not in ('postgres', 'postgresql'):
                 print(f"WARNING: Invalid database URL scheme: {parsed_url.scheme}")

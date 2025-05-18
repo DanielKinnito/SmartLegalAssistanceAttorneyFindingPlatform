@@ -7,6 +7,7 @@ from drf_yasg import openapi
 from rest_framework import permissions
 from django.views.generic import RedirectView
 
+# Create the schema view with better configuration for production
 schema_view = get_schema_view(
     openapi.Info(
         title="Smart Legal Assistance API",
@@ -18,6 +19,7 @@ schema_view = get_schema_view(
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
+    url=getattr(settings, 'SWAGGER_ROOT_URL', None),  # Use setting if defined
 )
 
 urlpatterns = [
@@ -36,15 +38,17 @@ urlpatterns = [
     path('api/chatbot/', include('apps.chatbot.urls')),
     path('api/documents/', include('apps.document_generation.urls')),
     
-    # API documentation - using Swagger instead of include_docs_urls
+    # API documentation - multiple paths for flexibility
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='api-docs'),
     
-    # Swagger documentation - multiple URL patterns for flexibility
-    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    # Swagger documentation - support various URL formats
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('swagger/ui/', schema_view.with_ui('swagger', cache_timeout=0)),
+    path('swagger/api/', schema_view.with_ui('swagger', cache_timeout=0)),
+    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     
-    # Additional Swagger URLs that might be used
+    # Additional schema paths used by different tools
     path('api/schema/', schema_view.with_ui('swagger', cache_timeout=0), name='api-schema'),
     path('api/schema/swagger-ui/', schema_view.with_ui('swagger', cache_timeout=0), name='api-schema-swagger'),
     path('api/schema/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='api-schema-redoc'),

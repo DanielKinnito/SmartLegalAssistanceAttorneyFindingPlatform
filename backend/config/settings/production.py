@@ -9,7 +9,23 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fallback-key-for-rend
 
 # Parse ALLOWED_HOSTS with special handling for the render.com domain
 allowed_hosts_str = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,smart-legal-assistance.onrender.com')
-ALLOWED_HOSTS = allowed_hosts_str.split(',')
+
+# Clean up the hosts - remove any URL scheme and paths
+cleaned_hosts = []
+for host in allowed_hosts_str.split(','):
+    host = host.strip()
+    # Remove any protocol and path if present
+    if '://' in host:
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(host)
+            host = parsed.netloc
+        except Exception:
+            pass
+    if host and host not in cleaned_hosts:
+        cleaned_hosts.append(host)
+
+ALLOWED_HOSTS = cleaned_hosts
 
 # Make sure required host is in ALLOWED_HOSTS
 if 'smart-legal-assistance.onrender.com' not in ALLOWED_HOSTS:
@@ -63,7 +79,28 @@ CORS_ALLOW_ALL_ORIGINS = False
 
 # Parse CORS_ALLOWED_ORIGINS
 cors_origins_str = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,https://smart-legal-assistance.onrender.com')
-CORS_ALLOWED_ORIGINS = cors_origins_str.split(',')
+
+# Clean up the origins - make sure they have a scheme
+cleaned_origins = []
+for origin in cors_origins_str.split(','):
+    origin = origin.strip()
+    if not origin:
+        continue
+        
+    # Skip origins with leading spaces in domain part (common error)
+    if ' ' in origin and '://' in origin:
+        parts = origin.split('://', 1)
+        if ' ' in parts[1]:
+            continue
+    
+    # Add scheme if missing for non-localhost origins
+    if origin not in ['localhost', '127.0.0.1'] and '://' not in origin:
+        origin = 'https://' + origin
+        
+    if origin and origin not in cleaned_origins:
+        cleaned_origins.append(origin)
+
+CORS_ALLOWED_ORIGINS = cleaned_origins
 
 # Make sure required origin is in CORS_ALLOWED_ORIGINS
 if 'https://smart-legal-assistance.onrender.com' not in CORS_ALLOWED_ORIGINS:
