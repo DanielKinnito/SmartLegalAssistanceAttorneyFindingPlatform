@@ -169,6 +169,11 @@ class AttorneyCredentialViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
+        # Check if this is being called for Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            # Return empty queryset for schema generation
+            return AttorneyCredential.objects.none()
+            
         user = self.request.user
         if user.is_superuser or user.user_type == 'ADMIN':
             return AttorneyCredential.objects.all()
@@ -251,6 +256,11 @@ class AvailabilitySlotViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsAttorney]
     
     def get_queryset(self):
+        # Check if this is being called for Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            # Return empty queryset for schema generation
+            return AvailabilitySlot.objects.none()
+            
         user = self.request.user
         if user.is_superuser or user.user_type == 'ADMIN':
             # For admin, allow filtering by attorney

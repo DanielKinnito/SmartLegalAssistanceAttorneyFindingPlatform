@@ -41,6 +41,11 @@ class ClientViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
     
     def get_queryset(self):
+        # Check if this is being called for Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            # Return empty queryset for schema generation
+            return Client.objects.none()
+            
         user = self.request.user
         if user.is_superuser or user.user_type == 'ADMIN':
             return Client.objects.all()
@@ -102,6 +107,11 @@ class LegalRequestViewSet(viewsets.ModelViewSet):
         return LegalRequestSerializer
     
     def get_queryset(self):
+        # Check if this is being called for Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            # Return empty queryset for schema generation
+            return LegalRequest.objects.none()
+            
         user = self.request.user
         if user.is_superuser or user.user_type == 'ADMIN':
             return LegalRequest.objects.all()
@@ -188,6 +198,11 @@ class ClientAttorneyReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsClient]
     
     def get_queryset(self):
+        # Check if this is being called for Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            # Return empty queryset for schema generation
+            return ClientAttorneyReview.objects.none()
+            
         user = self.request.user
         if user.is_superuser or user.user_type == 'ADMIN':
             return ClientAttorneyReview.objects.all()

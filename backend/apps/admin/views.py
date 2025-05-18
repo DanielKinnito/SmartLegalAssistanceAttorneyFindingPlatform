@@ -186,6 +186,11 @@ class AdminNotificationViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
     
     def get_queryset(self):
+        # Check if this is being called for Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            # Return empty queryset for schema generation
+            return AdminNotification.objects.none()
+            
         return AdminNotification.objects.filter(admin=self.request.user)
     
     def perform_create(self, serializer):

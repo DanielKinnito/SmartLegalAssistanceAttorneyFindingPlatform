@@ -150,6 +150,8 @@ class UserSerializer(serializers.ModelSerializer):
                  'client_profile', 'attorney_profile')
         read_only_fields = ('id', 'email', 'date_joined', 'last_login', 
                            'email_verified', 'verification_status')
+        # Fix for swagger serializer conflict with djoser
+        ref_name = "CustomUserSerializer"
 
 class UserActivitySerializer(serializers.ModelSerializer):
     """Serializer for user activity logs."""
