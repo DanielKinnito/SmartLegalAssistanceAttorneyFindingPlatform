@@ -17,7 +17,6 @@ interface ApiResponse {
   email: string;
   phone: string;
   userType: 'Client' | 'Attorney';
-  // Add other expected response fields here
 }
 
 const Signup: React.FC = () => {

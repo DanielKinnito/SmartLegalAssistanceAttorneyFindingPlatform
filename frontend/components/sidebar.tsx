@@ -46,11 +46,11 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       icon: FileText,
     },
    
-    {
-      id: "knowledge-base",
-      label: "AI Knowledge Base",
-      icon: Brain,
-    },
+    // {
+    //   id: "knowledge-base",
+    //   label: "AI Knowledge Base",
+    //   icon: Brain,
+    // },
     {
       id: "settings",
       label: "Settings",

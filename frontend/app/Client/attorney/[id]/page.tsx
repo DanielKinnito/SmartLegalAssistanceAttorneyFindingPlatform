@@ -3,12 +3,11 @@ import Link from "next/link"
 import { Star, CheckCircle, Clock, MapPin, Building, FileText, GraduationCap, Award } from "lucide-react"
 
 export default function AttorneyProfile({ params }: { params: { id: string } }) {
-  // In a real app, you would fetch attorney data based on the ID
-  // For now, we'll use static data to match the design
+  
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
-      {/* Header */}
+
      
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">

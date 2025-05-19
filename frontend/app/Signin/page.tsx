@@ -29,7 +29,6 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      // Mock login API call
       const response = await fetch('https://jsonplaceholder.typicode.com/users', {
         method: 'POST',
         headers: {
