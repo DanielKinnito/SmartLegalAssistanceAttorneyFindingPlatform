@@ -4,11 +4,20 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth import get_user_model
-from .serializers import UserRegistrationSerializer, UserSerializer, CustomTokenObtainPairSerializer
+from .serializers import (
+    UserRegistrationSerializer, UserSerializer, CustomTokenObtainPairSerializer,
+    ClientRegistrationSerializer, AttorneyRegistrationSerializer
+)
 from .models import UserActivity
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from .utils import create_verification_token, send_verification_email, verify_email_token
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+import logging
+
+# Get a named logger for this module
+logger = logging.getLogger('django')
 
 User = get_user_model()
 
@@ -29,6 +38,7 @@ class RegisterView(APIView):
                         'user': openapi.Schema(type=openapi.TYPE_OBJECT, description="User data"),
                         'refresh': openapi.Schema(type=openapi.TYPE_STRING, description="JWT refresh token"),
                         'access': openapi.Schema(type=openapi.TYPE_STRING, description="JWT access token"),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="Registration message"),
                     }
                 )
             ),
@@ -52,12 +62,20 @@ class RegisterView(APIView):
                 user_agent=request.META.get('HTTP_USER_AGENT', '')
             )
             
+            # Create and send verification token
+            token = create_verification_token(user)
+            send_verification_email(user, token)
+            
+            logger.info(f"User registered successfully: {user.email}")
+            
             return Response({
                 'user': UserSerializer(user).data,
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
+                'message': 'Registration successful. Please check your email to verify your account.'
             }, status=status.HTTP_201_CREATED)
         
+        logger.warning(f"User registration failed: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def get_client_ip(self, request):
@@ -101,25 +119,33 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         operation_description="Login with email and password to obtain JWT tokens"
     )
     def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        
-        if response.status_code == status.HTTP_200_OK:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            user = serializer.validated_data['user']
+        try:
+            response = super().post(request, *args, **kwargs)
             
-            # Log the login activity
-            client_ip = self.get_client_ip(request)
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            if response.status_code == status.HTTP_200_OK:
+                serializer = self.get_serializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                user = serializer.validated_data['user']
+                
+                # Log the login activity
+                client_ip = self.get_client_ip(request)
+                user_agent = request.META.get('HTTP_USER_AGENT', '')
+                
+                UserActivity.objects.create(
+                    user=user,
+                    activity_type='LOGIN',
+                    ip_address=client_ip,
+                    user_agent=user_agent
+                )
+                
+                logger.info(f"User logged in successfully: {user.email}")
+            else:
+                logger.warning(f"Login failed with status {response.status_code}")
             
-            UserActivity.objects.create(
-                user=user,
-                activity_type='LOGIN',
-                ip_address=client_ip,
-                user_agent=user_agent
-            )
-        
-        return response
+            return response
+        except Exception as e:
+            logger.error(f"Login error: {str(e)}")
+            raise
     
     def get_client_ip(self, request):
         """Get the client's IP address."""
@@ -194,6 +220,7 @@ class LogoutView(APIView):
         try:
             refresh_token = request.data.get('refresh')
             if not refresh_token:
+                logger.warning(f"Logout failed: No refresh token provided - User: {request.user.email}")
                 return Response({"detail": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
                 
             token = RefreshToken(refresh_token)
@@ -207,8 +234,10 @@ class LogoutView(APIView):
                 user_agent=request.META.get('HTTP_USER_AGENT', '')
             )
             
+            logger.info(f"User logged out successfully: {request.user.email}")
             return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
         except Exception as e:
+            logger.error(f"Logout error for user {request.user.email}: {str(e)}")
             return Response({"detail": "Invalid token or token already blacklisted."}, status=status.HTTP_400_BAD_REQUEST)
     
     def get_client_ip(self, request):
@@ -341,6 +370,310 @@ def toggle_mfa(request):
 
 def get_client_ip(request):
     """Helper function to get the client's IP address."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
+class ClientRegistrationView(APIView):
+    """
+    Client registration view.
+    """
+    permission_classes = [permissions.AllowAny]
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
+    
+    @swagger_auto_schema(
+        request_body=ClientRegistrationSerializer,
+        responses={
+            201: openapi.Response(
+                description="Client registered successfully",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'user': openapi.Schema(type=openapi.TYPE_OBJECT, description="User data"),
+                        'refresh': openapi.Schema(type=openapi.TYPE_STRING, description="JWT refresh token"),
+                        'access': openapi.Schema(type=openapi.TYPE_STRING, description="JWT access token"),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="Registration message"),
+                    }
+                )
+            ),
+            400: "Bad Request"
+        },
+        operation_description="Register a new client and return authentication tokens"
+    )
+    def post(self, request):
+        # Handle both JSON and form data
+        if request.content_type == 'application/json':
+            serializer = ClientRegistrationSerializer(data=request.data)
+        else:
+            serializer = ClientRegistrationSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            # Create tokens for the user
+            refresh = RefreshToken.for_user(user)
+            
+            # Set verification status based on probono request
+            client_profile = user.client_details
+            if client_profile.probono_requested:
+                verification_message = "Your account has been created successfully. Your probono request is pending verification by administrators. Please check your email to verify your account."
+            else:
+                user.verification_status = 'VERIFIED'
+                user.save()
+                verification_message = "Your account has been created successfully. Please check your email to verify your account."
+            
+            # Log the activity
+            UserActivity.objects.create(
+                user=user,
+                activity_type='CLIENT_REGISTRATION',
+                ip_address=self.get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                details={
+                    'probono_requested': client_profile.probono_requested,
+                    'verification_status': user.verification_status
+                }
+            )
+            
+            # Create and send verification token
+            token = create_verification_token(user)
+            send_verification_email(user, token)
+            
+            return Response({
+                'user': UserSerializer(user).data,
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'message': verification_message
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get_client_ip(self, request):
+        """Get the client's IP address."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class AttorneyRegistrationView(APIView):
+    """
+    Attorney registration view.
+    """
+    permission_classes = [permissions.AllowAny]
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
+    
+    @swagger_auto_schema(
+        request_body=AttorneyRegistrationSerializer,
+        responses={
+            201: openapi.Response(
+                description="Attorney registered successfully",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'user': openapi.Schema(type=openapi.TYPE_OBJECT, description="User data"),
+                        'refresh': openapi.Schema(type=openapi.TYPE_STRING, description="JWT refresh token"),
+                        'access': openapi.Schema(type=openapi.TYPE_STRING, description="JWT access token"),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="Registration message"),
+                    }
+                )
+            ),
+            400: "Bad Request"
+        },
+        operation_description="Register a new attorney and return authentication tokens"
+    )
+    def post(self, request):
+        # Handle both JSON and form data
+        if request.content_type == 'application/json':
+            serializer = AttorneyRegistrationSerializer(data=request.data)
+        else:
+            serializer = AttorneyRegistrationSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            # Create tokens for the user
+            refresh = RefreshToken.for_user(user)
+            
+            # Attorney accounts always start with pending verification
+            verification_message = "Your account has been created successfully. Your credentials are pending verification by administrators. Please check your email to verify your account."
+            
+            # Log the activity
+            UserActivity.objects.create(
+                user=user,
+                activity_type='ATTORNEY_REGISTRATION',
+                ip_address=self.get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                details={
+                    'verification_status': user.verification_status,
+                    'documents_submitted': True
+                }
+            )
+            
+            # Create and send verification token
+            token = create_verification_token(user)
+            send_verification_email(user, token)
+            
+            return Response({
+                'user': UserSerializer(user).data,
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'message': verification_message
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get_client_ip(self, request):
+        """Get the client's IP address."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+@swagger_auto_schema(
+    method='post',
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['token'],
+        properties={
+            'token': openapi.Schema(type=openapi.TYPE_STRING, description="Email verification token"),
+        }
+    ),
+    responses={
+        200: openapi.Response(
+            description="Email verification successful",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'success': openapi.Schema(type=openapi.TYPE_BOOLEAN, description="Success status"),
+                    'message': openapi.Schema(type=openapi.TYPE_STRING, description="Success or error message"),
+                }
+            )
+        ),
+        400: "Bad Request"
+    },
+    operation_description="Verify email with verification token"
+)
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def verify_email(request):
+    """
+    Verify user email with a verification token.
+    """
+    token_string = request.data.get('token')
+    if not token_string:
+        logger.warning(f"Email verification failed: No token provided")
+        return Response(
+            {'success': False, 'message': 'Token is required.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    logger.debug(f"Processing email verification with token: {token_string[:5]}...")
+    success, message = verify_email_token(token_string)
+    
+    if success:
+        logger.info(f"Email verification successful for token: {token_string[:5]}...")
+        return Response(
+            {'success': True, 'message': message},
+            status=status.HTTP_200_OK
+        )
+    else:
+        logger.warning(f"Email verification failed: {message}")
+        return Response(
+            {'success': False, 'message': message},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@swagger_auto_schema(
+    method='post',
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['email'],
+        properties={
+            'email': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_EMAIL, description="User email"),
+        }
+    ),
+    responses={
+        200: openapi.Response(
+            description="Verification email sent",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'success': openapi.Schema(type=openapi.TYPE_BOOLEAN, description="Success status"),
+                    'message': openapi.Schema(type=openapi.TYPE_STRING, description="Success or error message"),
+                }
+            )
+        ),
+        400: "Bad Request"
+    },
+    operation_description="Resend verification email"
+)
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def resend_verification(request):
+    """
+    Resend verification email to the user.
+    """
+    email = request.data.get('email')
+    if not email:
+        logger.warning("Resend verification failed: No email provided")
+        return Response(
+            {'success': False, 'message': 'Email is required.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        user = User.objects.get(email=email)
+        
+        # Don't resend if already verified
+        if user.email_verified:
+            logger.info(f"Resend verification skipped: Email already verified ({email})")
+            return Response(
+                {'success': False, 'message': 'Email is already verified.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create and send verification token
+        token = create_verification_token(user)
+        send_verification_email(user, token)
+        
+        # Log the activity
+        client_ip = get_client_ip(request)
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        
+        UserActivity.objects.create(
+            user=user,
+            activity_type='VERIFICATION_EMAIL_RESENT',
+            ip_address=client_ip,
+            user_agent=user_agent
+        )
+        
+        logger.info(f"Verification email resent successfully to {email}")
+        return Response(
+            {'success': True, 'message': 'Verification email sent successfully.'},
+            status=status.HTTP_200_OK
+        )
+    
+    except User.DoesNotExist:
+        # For security reasons, don't reveal that the email doesn't exist
+        logger.info(f"Resend verification requested for non-existent email: {email}")
+        return Response(
+            {'success': True, 'message': 'If this email exists in our system, a verification email has been sent.'},
+            status=status.HTTP_200_OK
+        )
+
+
+def get_client_ip(request):
+    """Get the client's IP address."""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0]

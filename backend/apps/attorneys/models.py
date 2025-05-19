@@ -28,7 +28,7 @@ class Attorney(models.Model):
     )
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='attorney_profile')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='attorney_details')
     license_number = models.CharField(max_length=50, unique=True)
     license_status = models.CharField(max_length=20, choices=LICENSE_STATUS_CHOICES, default='PENDING')
     specialties = models.ManyToManyField(Specialty, related_name='attorneys')

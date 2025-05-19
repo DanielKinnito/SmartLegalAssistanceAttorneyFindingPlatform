@@ -1,0 +1,404 @@
+{
+	"info": {
+		"_postman_id": "d7d9e1d2-5a5a-4d6d-b6fd-7a2ba9c3e71e",
+		"name": "Smart Legal Assistance - Authentication",
+		"description": "A collection of API requests to test the authentication service of the Smart Legal Assistance Platform.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Registration",
+			"item": [
+				{
+					"name": "Register Client",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"client@example.com\",\n    \"password\": \"Password123!\",\n    \"confirm_password\": \"Password123!\",\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"phone_number\": \"+1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/auth/register/client/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"auth",
+								"register",
+								"client",
+								""
+							]
+						},
+						"description": "Register a new client user in the system."
+					},
+					"response": []
+				},
+				{
+					"name": "Register Attorney",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"attorney@example.com\",\n    \"password\": \"Password123!\",\n    \"confirm_password\": \"Password123!\",\n    \"first_name\": \"Jane\",\n    \"last_name\": \"Smith\",\n    \"phone_number\": \"+1234567891\",\n    \"bar_number\": \"BAR123456\",\n    \"practice_areas\": [\"Family Law\", \"Criminal Law\"],\n    \"years_of_experience\": 5,\n    \"bio\": \"Experienced attorney specializing in family and criminal law.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/auth/register/attorney/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"auth",
+								"register",
+								"attorney",
+								""
+							]
+						},
+						"description": "Register a new attorney user in the system."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for user registration."
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"",
+									"if (jsonData.access) {",
+									"    pm.environment.set(\"accessToken\", jsonData.access);",
+									"    pm.environment.set(\"refreshToken\", jsonData.refresh);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"client@example.com\",\n    \"password\": \"Password123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/auth/login/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"auth",
+								"login",
+								""
+							]
+						},
+						"description": "Login with email and password to obtain JWT tokens."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"",
+									"if (jsonData.access) {",
+									"    pm.environment.set(\"accessToken\", jsonData.access);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refresh\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/auth/refresh/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"auth",
+								"refresh",
+								""
+							]
+						},
+						"description": "Use refresh token to obtain a new access token."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refresh\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/auth/logout/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"auth",
+								"logout",
+								""
+							]
+						},
+						"description": "Logout by blacklisting the refresh token."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for authentication (login, refresh, logout)."
+		},
+		{
+			"name": "Email Verification",
+			"item": [
+				{
+					"name": "Verify Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"your-verification-token\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/auth/verify-email/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"auth",
+								"verify-email",
+								""
+							]
+						},
+						"description": "Verify email address with the token received in email."
+					},
+					"response": []
+				},
+				{
+					"name": "Resend Verification Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"client@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/auth/resend-verification/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"auth",
+								"resend-verification",
+								""
+							]
+						},
+						"description": "Resend the verification email to a user who hasn't verified their email yet."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for email verification."
+		},
+		{
+			"name": "User Profile",
+			"item": [
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/auth/profile/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"auth",
+								"profile",
+								""
+							]
+						},
+						"description": "Get the current user's profile information."
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"old_password\": \"Password123!\",\n    \"new_password\": \"NewPassword123!\",\n    \"confirm_password\": \"NewPassword123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/auth/change-password/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"auth",
+								"change-password",
+								""
+							]
+						},
+						"description": "Change the current user's password."
+					},
+					"response": []
+				},
+				{
+					"name": "Toggle MFA",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/auth/toggle-mfa/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"auth",
+								"toggle-mfa",
+								""
+							]
+						},
+						"description": "Toggle multi-factor authentication for the current user."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for user profile management."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8000",
+			"type": "string"
+		}
+	]
+} 
