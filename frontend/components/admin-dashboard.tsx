@@ -12,6 +12,7 @@ import { KnowledgeBase } from "@/components/knowledge-base"
 import { Settings } from "@/components/settings"
 import { Analytics } from "@/components/analytics"
 import { Communications } from "@/components/communications"
+import UserManagement from "./all-user-magement"
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard")
@@ -23,11 +24,13 @@ export function AdminDashboard() {
         <Navbar />
         <div className="flex-1 overflow-auto">
           {activeTab === "dashboard" && <DashboardContent />}
+          {activeTab === "user-management" && <UserManagement />}
           {activeTab === "attorney-management" && <AttorneyManagement />}
           {activeTab === "client-management" && <ClientManagement />}
           {activeTab === "request-management" && <RequestManagement />}
           {activeTab === "analytics" && <Analytics view="overview" />}
           {activeTab === "content-management" && <ContentManagement />}
+
           {/* {activeTab === "communications" && <Communications />} */}
           {activeTab === "knowledge-base" && <KnowledgeBase />}
           {activeTab === "settings" && <Settings />}

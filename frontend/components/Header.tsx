@@ -32,6 +32,7 @@ export default function Header() {
             width={24}
             height={24}
             className="mr-1"
+            style={{ objectFit: 'contain' }}
           />
           <span className="font-semibold text-lg">LegalConnect</span>
         </div>

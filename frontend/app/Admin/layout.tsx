@@ -1,23 +1,21 @@
-import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
-import "./admin.css" // Adjusted import path for global CSS
+import "./admin.css"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export const metadata: Metadata = {
+  title: "Admin Dashboard",
+  description: "Admin interface for managing the application",
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
+    <div className={`flex h-screen bg-gray-100 ${inter.className}`}>
+      <main className="flex-1 overflow-y-auto">
+        {children}
+      </main>
+    </div>
   )
 }
+
