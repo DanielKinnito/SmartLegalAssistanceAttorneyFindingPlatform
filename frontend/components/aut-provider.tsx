@@ -65,7 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, pathname, router, isLoading])
 
   const login = async (email: string, password: string, rememberMe: boolean): Promise<boolean> => {
-    // Mock authentication - in a real app, this would be an API call
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     // For demo purposes, accept any login with admin@example.com
