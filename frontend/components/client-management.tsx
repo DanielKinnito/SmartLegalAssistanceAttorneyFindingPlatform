@@ -1,12 +1,12 @@
 "use client"
-
+import * as React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, MoreHorizontal, Plus, Search, SlidersHorizontal, Eye } from "lucide-react"
+import { Download, MoreHorizontal, Plus, Search, SlidersHorizontal, Eye, Check, X, Clock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
@@ -47,6 +47,9 @@ export function ClientManagement() {
   const [filterStatus, setFilterStatus] = useState("all")
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState("")
+  const [showRejectionDialog, setShowRejectionDialog] = useState(false)
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchClients()
@@ -75,27 +78,80 @@ export function ClientManagement() {
     }
   }
 
-  const toggleProBonoApproval = async (userId: string) => {
+  const handleProBonoStatusChange = (clientId: string, newStatus: "pending" | "approved" | "rejected") => {
+    setSelectedClientId(clientId)
+    if (newStatus === "rejected") {
+      setShowRejectionDialog(true)
+    } else {
+      toggleProBonoApproval(clientId, { 
+        status: newStatus
+      })
+    }
+  }
+
+  const toggleProBonoApproval = async (clientId: string, data: { 
+    status: "pending" | "approved" | "rejected", 
+    rejected_reason?: string 
+  }) => {
     try {
-      const updatedUser = await adminService.toggleProBonoApproval(userId)
-      setClients(clients.map(client => {
-        if (client.id === updatedUser.User.data.id) {
-          return {
-            ...client,
-            probono_status: updatedUser.User.data.probono_status,
-            probono_approved_at: updatedUser.User.data.probono_approved_at,
+      // Find the client to get the user ID
+      const client = clients.find(c => c.id === clientId);
+      if (!client) {
+        throw new Error("Client not found");
+      }
+
+      // Optimistically update the UI
+      setClients(prevClients => 
+        prevClients.map(client => {
+          if (client.id === clientId) {
+            return {
+              ...client,
+              probono_status: data.status,
+              probono_rejected_reason: data.rejected_reason || null,
+              probono_approved_at: data.status === "approved" ? new Date().toISOString() : null,
+              probono_expires_at: data.status === "approved" ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : null
+            }
           }
-        }
-        return client
-      }))
-      toast.success("Pro Bono status updated")
+          return client
+        })
+      )
+
+      // Make the API call with the user ID
+      await adminService.toggleClientProBonoApproval(client.user.id, data)
+      
+      // Show success message
+      toast.success(
+        data.status === "approved" 
+          ? "Pro Bono request approved successfully" 
+          : data.status === "rejected"
+          ? "Pro Bono request rejected successfully"
+          : "Pro Bono status updated to pending"
+      )
+      
+      // Reset states
+      setShowRejectionDialog(false)
+      setRejectionReason("")
+      setSelectedClientId(null)
+
+      // Refresh the clients list to ensure we have the latest data
+      await fetchClients()
     } catch (err) {
+      console.error("Error updating pro bono status:", err)
+      
+      // Revert the optimistic update
+      await fetchClients()
+      
+      // Show error message
       if (err instanceof Error) {
         toast.error(err.message)
       } else {
-        toast.error("Failed to update pro bono status")
+        toast.error("Failed to update pro bono status. Please try again.")
       }
-      console.error("Error updating pro bono status:", err)
+
+      // Reset states on error
+      setShowRejectionDialog(false)
+      setRejectionReason("")
+      setSelectedClientId(null)
     }
   }
 
@@ -239,16 +295,51 @@ export function ClientManagement() {
                   )}
                 </TableCell>
                 <TableCell className="py-4 px-6">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={client.probono_status === "approved"}
-                      onCheckedChange={() => toggleProBonoApproval(client.id)}
-                      className="data-[state=checked]:bg-[#263A56]"
-                    />
-                    <span className="text-sm text-gray-600">
-                      {client.probono_status === "approved" ? "Approved" : "Not Approved"}
-                    </span>
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-[140px] justify-between bg-[#29374A] text-white hover:bg-[#29374A]/90">
+                        {client.probono_status === "approved" ? (
+                          <>
+                            <Check className="h-4 w-4 text-white" />
+                            Approved
+                          </>
+                        ) : client.probono_status === "rejected" ? (
+                          <>
+                            <X className="h-4 w-4 text-white" />
+                            Rejected
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="h-4 w-4 text-white" />
+                            Pending
+                          </>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-white">
+                      <DropdownMenuItem
+                        onClick={() => handleProBonoStatusChange(client.id, "pending")}
+                        className="flex items-center gap-2 hover:bg-[#29374A] hover:text-white"
+                      >
+                        <Clock className="h-4 w-4 text-yellow-600" />
+                        Set as Pending
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleProBonoStatusChange(client.id, "approved")}
+                        className="flex items-center gap-2 hover:bg-[#29374A] hover:text-white"
+                      >
+                        <Check className="h-4 w-4 text-green-600" />
+                        Approve
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleProBonoStatusChange(client.id, "rejected")}
+                        className="flex items-center gap-2 hover:bg-[#29374A] hover:text-white"
+                      >
+                        <X className="h-4 w-4 text-red-600" />
+                        Reject
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
                 <TableCell className="text-right py-4 px-6">
                   <Button
@@ -265,6 +356,59 @@ export function ClientManagement() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Rejection Dialog */}
+      <Dialog open={showRejectionDialog} onOpenChange={setShowRejectionDialog}>
+        <DialogContent className="sm:max-w-[425px] bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-[#263A56]">Reject Pro Bono Request</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="reason" className="text-sm font-medium text-gray-700">
+                Rejection Reason
+              </label>
+              <textarea
+                id="reason"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                className="min-h-[100px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#263A56]"
+                placeholder="Enter reason for rejection..."
+                required
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRejectionDialog(false)
+                setRejectionReason("")
+                setSelectedClientId(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-[#263A56] hover:bg-[#263A56]/90 text-white"
+              onClick={() => {
+                if (!rejectionReason.trim()) {
+                  toast.error("Please provide a reason for rejection")
+                  return
+                }
+                if (selectedClientId) {
+                  toggleProBonoApproval(selectedClientId, {
+                    status: "rejected",
+                    rejected_reason: rejectionReason.trim()
+                  })
+                }
+              }}
+            >
+              Confirm Rejection
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Client Details Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
@@ -320,16 +464,51 @@ export function ClientManagement() {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="text-sm font-medium text-[#263A56] mb-3">Actions</h3>
                   <div className="mt-2 space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={selectedClient.probono_status === "approved"}
-                        onCheckedChange={() => toggleProBonoApproval(selectedClient.id)}
-                        className="data-[state=checked]:bg-[#263A56]"
-                      />
-                      <span className="text-gray-700 font-medium">
-                        {selectedClient.probono_status === "approved" ? "Approved" : "Not Approved"}
-                      </span>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-[140px] justify-between bg-[#29374A] text-white hover:bg-[#29374A]/90">
+                          {selectedClient.probono_status === "approved" ? (
+                            <>
+                              <Check className="h-4 w-4 text-white" />
+                              Approved
+                            </>
+                          ) : selectedClient.probono_status === "rejected" ? (
+                            <>
+                              <X className="h-4 w-4 text-white" />
+                              Rejected
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="h-4 w-4 text-white" />
+                              Pending
+                            </>
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-white">
+                        <DropdownMenuItem
+                          onClick={() => handleProBonoStatusChange(selectedClient.id, "pending")}
+                          className="flex items-center gap-2 hover:bg-[#29374A] hover:text-white"
+                        >
+                          <Clock className="h-4 w-4 text-yellow-600" />
+                          Set as Pending
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleProBonoStatusChange(selectedClient.id, "approved")}
+                          className="flex items-center gap-2 hover:bg-[#29374A] hover:text-white"
+                        >
+                          <Check className="h-4 w-4 text-green-600" />
+                          Approve
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleProBonoStatusChange(selectedClient.id, "rejected")}
+                          className="flex items-center gap-2 hover:bg-[#29374A] hover:text-white"
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                          Reject
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </div>

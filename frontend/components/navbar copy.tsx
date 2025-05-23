@@ -31,6 +31,7 @@ export function Navbar() {
   const router = useRouter();
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
+  
 
   useEffect(() => {
     fetchAdminUser();

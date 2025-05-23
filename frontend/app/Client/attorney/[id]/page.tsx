@@ -2,7 +2,13 @@ import Image from "next/image"
 import Link from "next/link"
 import { Star, CheckCircle, Clock, MapPin, Building, FileText, GraduationCap, Award } from "lucide-react"
 
-export default function AttorneyProfile({ params }: { params: { id: string } }) {
+interface PageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default function AttorneyProfile({ params }: PageProps) {
   
 
   return (

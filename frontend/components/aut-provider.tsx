@@ -54,12 +54,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Redirect to login if not authenticated and trying to access protected routes
     if (!isLoading) {
-      const isAdminRoute = pathname.startsWith("/admin") && !pathname.includes("/admin/login")
+      const isAdminRoute = pathname.startsWith("/Admin") && !pathname.includes("/Admin/login")
 
       if (!isAuthenticated && isAdminRoute) {
-        router.push("/admin/login")
-      } else if (isAuthenticated && pathname === "/admin/login") {
-        router.push("/admin/users")
+        router.push("/Admin/login")
+      } else if (isAuthenticated && pathname === "/Admin") {
+        router.push("/Admin")
       }
     }
   }, [isAuthenticated, pathname, router, isLoading])
@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setUser(null)
     setIsAuthenticated(false)
-    router.push("/admin/login")
+    router.push("/Admin/login")
   }
 
   return (

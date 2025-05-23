@@ -32,11 +32,11 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         },
       ],
     },
-    {
-      id: "request-management",
-      label: "Request Management",
-      icon: ClipboardCheck,
-    },
+    // {
+    //   id: "request-management",
+    //   label: "Request Management",
+    //   icon: ClipboardCheck,
+    // },
     {
       id: "analytics",
       label: "Analytics",

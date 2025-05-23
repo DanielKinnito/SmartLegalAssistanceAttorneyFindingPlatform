@@ -61,8 +61,20 @@ export function AttorneyManagement() {
       setLoading(true);
       const apiUsers = await adminService.getUserAttorney();
       const attorneyUsers = apiUsers
-        .filter(apiUser => apiUser.User.Role === 'attorney')
-        .map(apiUser => apiUser.User.data) as Attorney[];
+        .filter(apiUser => apiUser.User?.Role === 'attorney')
+        .map(apiUser => ({
+          ...apiUser.User.data,
+          user: {
+            id: apiUser.User.data.user.id,
+            first_name: apiUser.User.data.user.first_name,
+            last_name: apiUser.User.data.user.last_name,
+            email: apiUser.User.data.user.email,
+            role: apiUser.User.data.user.role,
+            image: apiUser.User.data.user.image,
+            created_at: apiUser.User.data.user.created_at,
+            updated_at: apiUser.User.data.user.updated_at,
+          }
+        })) as Attorney[];
 
       setAttorneys(attorneyUsers);
     } catch (err) {
@@ -82,12 +94,19 @@ export function AttorneyManagement() {
   const toggleAttorneyApproval = async (userId: string) => {
     try {
       setTogglingId(userId); // Set loading state for this specific toggle
+      
+      // Find the attorney before toggling to get current state
+      const attorney = attorneys.find(att => att.user.id === userId);
+      if (!attorney) {
+        throw new Error("Attorney not found");
+      }
+
       const response = await adminService.toggleAttorneyApproval(userId);
       
       // Update the attorneys list with the new approval status
       setAttorneys(prevAttorneys => 
         prevAttorneys.map(att => {
-          if (att.id === userId) {
+          if (att.user.id === userId) {
             return {
               ...att,
               is_approved: !att.is_approved,
@@ -98,7 +117,7 @@ export function AttorneyManagement() {
       );
 
       // Show success message
-      toast.success(`Attorney ${!attorneys.find(a => a.id === userId)?.is_approved ? 'approved' : 'unapproved'} successfully`);
+      toast.success(`Attorney ${attorney.is_approved ? 'unapproved' : 'approved'} successfully`);
     } catch (err) {
       if (err instanceof Error) {
         toast.error(err.message);
@@ -247,10 +266,10 @@ export function AttorneyManagement() {
                   <div className="flex items-center space-x-2">
                     <Switch
                       checked={attorney.is_approved}
-                      onCheckedChange={() => toggleAttorneyApproval(attorney.id)}
-                      disabled={togglingId === attorney.id}
-                      className={`data-[state=checked]:bg-[#263A56] ${
-                        togglingId === attorney.id ? 'opacity-50 cursor-not-allowed' : ''
+                      onCheckedChange={() => toggleAttorneyApproval(attorney.user.id)}
+                      disabled={togglingId === attorney.user.id}
+                      className={`data-[state=checked]:bg-[#29374A] ${
+                        togglingId === attorney.user.id ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     />
                     <span className="text-sm text-gray-600">

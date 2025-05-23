@@ -71,7 +71,7 @@ interface AdminResponse {
 }
 
 // Union type for all possible responses
-type UserResponse = ClientResponse | AttorneyResponse | AdminResponse;
+export type UserResponse = ClientResponse | AttorneyResponse | AdminResponse;
 
 export interface User {
   id: string;
@@ -101,9 +101,48 @@ interface CreateAdminData {
 interface UpdateUserData {
   first_name?: string;
   last_name?: string;
-  email?: string;
-  role?: string;
-  is_attorney_approved?: boolean;
+  image?: string;
+}
+
+interface ProBonoApprovalRequest {
+  status: "pending" | "approved" | "rejected";
+  rejected_reason?: string;
+}
+
+// Document interfaces
+export interface Document {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  jurisdiction: string;
+  language: string;
+  proclamation_number: string;
+  publication_year: number;
+  document_url: string;
+  created_at: string;
+}
+
+export interface CreateDocumentData {
+  title: string;
+  description: string;
+  category: string;
+  jurisdiction: string;
+  language: string;
+  proclamation_number: string;
+  publication_year: number;
+  document_file?: File;
+}
+
+export interface UpdateDocumentData {
+  title?: string;
+  description?: string;
+  category?: string;
+  jurisdiction?: string;
+  language?: string;
+  proclamation_number?: string;
+  publication_year?: number;
+  document_file?: File;
 }
 
 const getAuthHeader = () => {
@@ -231,9 +270,12 @@ export const adminService = {
   // Update user details
   async updateUser(id: string, data: UpdateUserData): Promise<User> {
     try {
-      const response = await fetch(`${API_URL}/getuserbyid/${id}`, {
+      const response = await fetch(`${API_URL}/getuserbyid/${id}/`, {
         method: 'PATCH',
-        headers: getAuthHeader(),
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data),
       });
 
@@ -275,21 +317,167 @@ export const adminService = {
   async toggleAttorneyApproval(id: string): Promise<User> {
     try {
       const response = await fetch(`${API_URL}/attorney/toggleapproval/${id}`, {
-        method: 'PUT',
-        headers: getAuthHeader(),
+        method: 'POST',
+        headers: {
+          ...getAuthHeader(),
+          // 'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to toggle attorney approval');
+        const errorData = await response.json().catch(() => null);
+        if (errorData?.message) {
+          throw new Error(errorData.message);
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      return response.json();
+      const responseData = await response.json();
+      return responseData;
     } catch (error) {
+      console.error('Toggle attorney approval error:', error);
       if (error instanceof Error) {
         throw new Error(`Toggle attorney approval failed: ${error.message}`);
       }
       throw new Error('An unexpected error occurred while toggling attorney approval');
     }
   },
+
+  // Toggle client pro bono approval
+  async toggleClientProBonoApproval(clientId: string, data: ProBonoApprovalRequest): Promise<User> {
+    try {
+      const response = await fetch(`${API_URL}/admin/probono/status/${clientId}`, {
+        method: 'PATCH',
+        headers: {
+          ...getAuthHeader(),
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: data.status,
+          rejected_reason: data.rejected_reason || null
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        if (errorData?.message) {
+          throw new Error(errorData.message);
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      return responseData;
+    } catch (error) {
+      console.error('Pro bono approval error:', error);
+      if (error instanceof Error) {
+        throw new Error(`Update pro bono status failed: ${error.message}`);
+      }
+      throw new Error('An unexpected error occurred while updating pro bono status');
+    }
+  },
+
+  // Document Management
+  async getDocuments(): Promise<Document[]> {
+    try {
+      const response = await fetch(`${API_URL}/documents`, {
+        headers: getAuthHeader(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch documents');
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Get documents failed: ${error.message}`);
+      }
+      throw new Error('An unexpected error occurred while fetching documents');
+    }
+  },
+
+  async createDocument(formData: FormData): Promise<Document> {
+    try {
+      // Log the FormData contents for debugging
+      for (let pair of formData.entries()) {
+        console.log('FormData entry:', pair[0], pair[1]);
+      }
+
+      const response = await fetch(`${API_URL}/documents/create`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Server error response:', error);
+        throw new Error(error.message || 'Failed to create document');
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Full error in createDocument:', error);
+      if (error instanceof Error) {
+        throw new Error(`Create document failed: ${error.message}`);
+      }
+      throw new Error('An unexpected error occurred while creating document');
+    }
+  },
+
+  async updateDocument(id: string, formData: FormData): Promise<Document> {
+    try {
+      // Log the FormData contents for debugging
+      for (let pair of formData.entries()) {
+        console.log('FormData entry:', pair[0], pair[1]);
+      }
+
+      const response = await fetch(`${API_URL}/documents/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Server error response:', error);
+        throw new Error(error.message || 'Failed to update document');
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Full error in updateDocument:', error);
+      if (error instanceof Error) {
+        throw new Error(`Update document failed: ${error.message}`);
+      }
+      throw new Error('An unexpected error occurred while updating document');
+    }
+  },
+
+  async deleteDocument(id: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}/documents/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeader(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete document');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Delete document failed: ${error.message}`);
+      }
+      throw new Error('An unexpected error occurred while deleting document');
+    }
+  }
 };
