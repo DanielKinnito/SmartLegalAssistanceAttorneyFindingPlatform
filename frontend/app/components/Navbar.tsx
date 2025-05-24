@@ -19,13 +19,13 @@ const Navbar = () => {
       <div className="flex items-center gap-8">
         <div className="flex gap-8 text-white text-base font-medium">
           <Link href="/" className={isActive('/')}>Home</Link>
-          <Link href="/Aboutus" className={isActive('/Aboutus')}>About</Link>
-          <Link href="/Services" className={isActive('/Services')}>Services</Link>
-          <Link href="/ContactUs" className={isActive('/ContactUs')}>Contact Us</Link>
+          <Link href="/(Landing)/Aboutus" className={isActive('/(Landing)/Aboutus')}>About</Link>
+          <Link href="/(Landing)/Services" className={isActive('/(Landing)/Services')}>Services</Link>
+          <Link href="/(Landing)/ContactUs" className={isActive('/(Landing)/ContactUs')}>Contact Us</Link>
         </div>
         <div className="flex items-center gap-4 ml-8">
-          <Link href="/login" className="bg-transparent border border-[#CBB26A] text-sm px-4 py-1 text-[#CBB26A] hover:text-gray-300 font-medium">Login</Link>
-          <Link href="/register" className="bg-[#CBB26A] text-white text-sm px-4 py-1 rounded font-medium hover:bg-[#bfa14e] transition">Register</Link>
+          <Link href="/(auth)/Signin" className="bg-transparent border border-[#CBB26A] text-sm px-4 py-1 text-[#CBB26A] hover:text-gray-300 font-medium">Login</Link>
+          <Link href="/(auth)/Signup" className="bg-[#CBB26A] text-white text-sm px-4 py-1 rounded font-medium hover:bg-[#bfa14e] transition">Register</Link>
         </div>
       </div>
     </nav>
