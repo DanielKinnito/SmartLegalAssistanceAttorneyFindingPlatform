@@ -22,7 +22,7 @@ import {
   FiberManualRecord
 } from '@mui/icons-material';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 export default function AttorneyLayout({ children }: { children: React.ReactNode }) {
@@ -33,9 +33,9 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
   const [isAvailable, setIsAvailable] = useState(true);
 
   const navItems = [
-    { text: 'Law Search', icon: <Search className="w-5 h-5" />, path: '/SearchLaw' },
-    { text: 'AI Bot', icon: <ChatBubbleOutline className="w-5 h-5" />, path: '/Chatbot' },
-    { text: 'Legal Requests', path: '/Attorney/legalRequest' },
+    { text: 'Law Search', icon: <Search className="w-5 h-5" />, path: '/Attorney/law-search' },
+    { text: 'AI Bot', icon: <ChatBubbleOutline className="w-5 h-5" />, path: '/Attorney/ai-bot' },
+    { text: 'Legal Requests', path: '/Attorney/LegalRequest' },
   ];
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -44,20 +44,6 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleLogout = () => {
-    // Clear localStorage
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("refreshToken");
-    
-    // Close the menu
-    handleMenuClose();
-    
-    // Redirect to signin page
-    router.push('/signin');
   };
 
   const toggleAvailability = () => {
@@ -156,8 +142,10 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
                 fontSize="small" 
                 sx={{ 
                   color: isAvailable ? '#4CAF50' : '#9E9E9E',
+                  
                 }} 
               />
+              
             </Box>
 
             <Chip
@@ -170,7 +158,6 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
                         backgroundColor: 'rgba(255,255,255,0.9)'
                     }
                 }}
-                onClick={handleMenuOpen}
                 />
 
             <Menu
@@ -197,13 +184,14 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
                 }
               }}
             >
-              <Link href="/Attorney/profile" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-                <MenuItem onClick={handleMenuClose}>
-                  <Avatar sx={{ width: 32, height: 32, mr: 1 }} /> Profile
-                </MenuItem>
-              </Link>
+              <MenuItem onClick={handleMenuClose}>
+                <Avatar sx={{ width: 32, height: 32, mr: 1 }} /> Profile
+              </MenuItem>
+              <MenuItem onClick={handleMenuClose}>
+                <Person fontSize="small" sx={{ mr: 1 }} /> My Account
+              </MenuItem>
               <Divider />
-              <MenuItem onClick={handleLogout}>
+              <MenuItem onClick={handleMenuClose}>
                 <ExitToApp fontSize="small" sx={{ mr: 1 }} /> Logout
               </MenuItem>
             </Menu>
