@@ -155,9 +155,18 @@ export default function LawSearch() {
               <div className="mb-6">
                 <h3 className="font-medium mb-3">Legal Category</h3>
                 <div className="space-y-2">
-                  {[
-                    "Constitutional", "Civil", "Criminal", "Commercial",
-                    "Labor", "Family", "Land", "Investment", "Human Rights"
+                  {
+                   [
+                    "Constitutional",
+                    "Civil",
+                    "Criminal",
+                    "Commercial",
+                    "Labor",
+                    "Family",
+                    "Investment",
+                    "Human Rights"
+                  
+                
                   ].map((category) => (
                     <label key={category} className="flex items-center">
                       <input

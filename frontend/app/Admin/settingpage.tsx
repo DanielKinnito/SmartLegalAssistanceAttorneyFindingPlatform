@@ -1,6 +1,8 @@
+"use client"
+
 // pages/settings.tsx
 import React, { useState, useEffect } from 'react';
-import { adminService } from '@/app/services/admin-api';
+import { adminService, UpdateUserData } from '@/app/services/admin-api';
 import { toast } from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Upload, Save, Shield, Bell, Settings, User, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Camera } from "lucide-react";
 
 interface AdminSettings {
   name: string;
@@ -28,6 +32,30 @@ interface AdminSettings {
     registrationEnabled: boolean;
     maxFileSize: number;
   };
+}
+
+interface SettingsFormData {
+  first_name: string;
+  last_name: string;
+  current_password?: string;
+  new_password?: string;
+  confirm_password?: string;
+}
+
+interface NotificationSettings {
+  email_notifications: boolean;
+  push_notifications: boolean;
+  marketing_emails: boolean;
+  security_alerts: boolean;
+}
+
+interface UpdateUserRequest {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  current_password?: string;
+  new_password?: string;
+  image?: File;
 }
 
 const SettingsPage: React.FC = () => {
@@ -51,13 +79,23 @@ const SettingsPage: React.FC = () => {
       maxFileSize: 10,
     },
   });
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+  const [formData, setFormData] = useState<SettingsFormData>({
+    first_name: "",
+    last_name: "",
+    current_password: "",
+    new_password: "",
+    confirm_password: ""
   });
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationSettings>({
+    email_notifications: true,
+    push_notifications: true,
+    marketing_emails: false,
+    security_alerts: true
+  });
+  const router = useRouter();
 
   useEffect(() => {
     fetchAdminSettings();
@@ -70,12 +108,20 @@ const SettingsPage: React.FC = () => {
       const admin = adminData.find(user => adminService.isAdmin(user));
       
       if (admin) {
+        localStorage.setItem('user_id', admin.User.data.id);
+        
         setSettings(prev => ({
           ...prev,
           name: admin.User.data.first_name + ' ' + admin.User.data.last_name,
           email: admin.User.data.email,
         }));
         setImagePreview(admin.User.data.image || '');
+        
+        setFormData(prev => ({
+          ...prev,
+          first_name: admin.User.data.first_name,
+          last_name: admin.User.data.last_name
+        }));
       }
     } catch (error) {
       toast.error('Failed to load admin settings');
@@ -88,76 +134,132 @@ const SettingsPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       setProfileImage(file);
-      setImagePreview(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageUpload = async (imageFile: File) => {
+    try {
+      setIsLoading(true);
+      const userId = localStorage.getItem('user_id');
+      
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+
+      const updatedUser = await adminService.updateUserProfile(userId, {
+        image: imageFile
+      });
+
+      // Update image preview with the new URL
+      setImagePreview(updatedUser.image || '');
+      toast.success('Profile image updated successfully');
+    } catch (error) {
+      console.error('Error updating profile image:', error);
+      toast.error('Failed to update profile image');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSettingsUpdate = async () => {
+    try {
+      setIsLoading(true);
+      const userId = localStorage.getItem('user_id');
+      console.log(userId)
+      if (!userId) {
+        const adminData = await adminService.getUserAttorney();
+        const admin = adminData.find(user => adminService.isAdmin(user));
+        
+        if (!admin) {
+          throw new Error('User not found');
+        }
+        
+        localStorage.setItem('user_id', admin.User.data.id);
+      }
+
+      // Split the full name into first and last name
+      const nameParts = settings.name.split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ');
+
+      const updateData: UpdateUserRequest = {
+        first_name: firstName,
+        last_name: lastName,
+        email: settings.email
+      };
+
+      if (profileImage) {
+        await handleImageUpload(profileImage);
+      }
+
+      const updatedUser = await adminService.updateUserProfile(userId || '', updateData);
+      
+      // Update formData to match the new values
+      setFormData(prev => ({
+        ...prev,
+        first_name: firstName,
+        last_name: lastName
+      }));
+      
+      toast.success('Settings updated successfully');
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      toast.error('Failed to update settings');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
+    if (formData.new_password !== formData.confirm_password) {
       toast.error('New passwords do not match');
       return;
     }
 
     try {
-      setLoading(true);
-      const userId = (await adminService.getUserAttorney()).find(user => adminService.isAdmin(user))?.User.data.id;
+      setIsLoading(true);
+      const userId = localStorage.getItem('user_id');
       if (!userId) throw new Error('User not found');
       
-      await adminService.updateUser(userId, {
-        current_password: passwordData.currentPassword,
-        new_password: passwordData.newPassword,
-      });
+      const updateData: UpdateUserRequest = {
+        current_password: formData.current_password,
+        new_password: formData.new_password,
+      };
+      
+      await adminService.updateUser(userId, updateData);
       toast.success('Password updated successfully');
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setFormData(prev => ({
+        ...prev,
+        current_password: '',
+        new_password: '',
+        confirm_password: ''
+      }));
     } catch (error) {
       toast.error('Failed to update password');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleSettingsUpdate = async () => {
-    try {
-      setLoading(true);
-      const userId = (await adminService.getUserAttorney()).find(user => adminService.isAdmin(user))?.User.data.id;
-      if (!userId) throw new Error('User not found');
-
-      const [firstName, ...lastNameParts] = settings.name.split(' ');
-      const lastName = lastNameParts.join(' ');
-
-      // First upload the image if there's a new one
-      let imageUrl = imagePreview;
-      if (profileImage) {
-        const formData = new FormData();
-        formData.append('image', profileImage);
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/uploadimage`, {
-          method: 'POST',
-          body: formData,
-          credentials: 'include',
-        });
-
-        if (!response.ok) throw new Error('Failed to upload image');
-        const data = await response.json();
-        imageUrl = data.image_url;
-      }
-
-      // Then update the user data with the new image URL
-      await adminService.updateUser(userId, {
-        first_name: firstName,
-        last_name: lastName,
-        image: imageUrl
-      });
-
-      toast.success('Settings updated successfully');
-      setProfileImage(null); // Reset the profile image state after successful update
-    } catch (error) {
-      console.error('Update error:', error);
-      toast.error('Failed to update settings');
-    } finally {
-      setLoading(false);
-    }
+  const handleNotificationChange = (setting: keyof NotificationSettings) => (checked: boolean) => {
+    setNotifications(prev => ({
+      ...prev,
+      [setting]: checked
+    }));
   };
 
   if (loading) {
@@ -274,8 +376,8 @@ const SettingsPage: React.FC = () => {
                       <Input
                         id="currentPassword"
                         type="password"
-                        value={passwordData.currentPassword}
-                        onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                        value={formData.current_password}
+                        onChange={handleInputChange}
                         className="mt-1.5"
                       />
                     </div>
@@ -284,8 +386,8 @@ const SettingsPage: React.FC = () => {
                       <Input
                         id="newPassword"
                         type="password"
-                        value={passwordData.newPassword}
-                        onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                        value={formData.new_password}
+                        onChange={handleInputChange}
                         className="mt-1.5"
                       />
                     </div>
@@ -294,8 +396,8 @@ const SettingsPage: React.FC = () => {
                       <Input
                         id="confirmPassword"
                         type="password"
-                        value={passwordData.confirmPassword}
-                        onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        value={formData.confirm_password}
+                        onChange={handleInputChange}
                         className="mt-1.5"
                       />
                     </div>
@@ -394,12 +496,7 @@ const SettingsPage: React.FC = () => {
                       <Switch
                         id={item.id}
                         checked={item.checked}
-                        onCheckedChange={(checked) => 
-                          setSettings(prev => ({
-                            ...prev,
-                            notifications: { ...prev.notifications, [item.id]: checked }
-                          }))
-                        }
+                        onCheckedChange={handleNotificationChange(item.id as keyof NotificationSettings)}
                         className="data-[state=checked]:bg-[#263A56]"
                       />
                     </div>

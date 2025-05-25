@@ -14,6 +14,7 @@ import UserManagement from "./all-user-mangement"
 import ContentManagement from "@/app/Admin/content-management/page"
 import Analytics from "./analytics"
 import SettingsPage from "@/app/Admin/settingpage"
+import AnalyticsPage from "@/app/Admin/analytics/page"
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard")
@@ -24,11 +25,11 @@ export function AdminDashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
         <div className="flex-1 overflow-auto">
-          {activeTab === "dashboard" && <DashboardContent />}
+          {activeTab === "dashboard" && <AnalyticsPage />}
           {activeTab === "user-management" && <UserManagement />}
           {activeTab === "attorney-management" && <AttorneyManagement />}
           {activeTab === "client-management" && <ClientManagement />}
-          {activeTab === "request-management" && <RequestManagement />}
+          {/* {activeTab === "request-management" && <RequestManagement />} */}
           {activeTab === "analytics" && <Analytics/> }
           {activeTab === "content-management" && <ContentManagement/>}
 

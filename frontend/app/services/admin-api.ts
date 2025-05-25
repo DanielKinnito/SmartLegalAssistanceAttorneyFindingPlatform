@@ -101,7 +101,7 @@ interface CreateAdminData {
 interface UpdateUserData {
   first_name?: string;
   last_name?: string;
-  image?: string;
+  image_url?: string;
 }
 
 interface ProBonoApprovalRequest {
@@ -478,6 +478,97 @@ export const adminService = {
         throw new Error(`Delete document failed: ${error.message}`);
       }
       throw new Error('An unexpected error occurred while deleting document');
+    }
+  },
+
+  // Upload user profile image
+  async uploadProfileImage(imageFile: File): Promise<{ image_url: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile); // Changed back to 'image' as that's what backend expects
+
+      // Log the FormData contents for debugging
+      for (let pair of formData.entries()) {
+        console.log('FormData entry:', pair[0], pair[1]);
+      }
+
+      const response = await fetch(`${API_URL}/user/uploadimage`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          // Don't set Content-Type header for FormData
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('Upload image error response:', errorData);
+        throw new Error(errorData?.message || 'Failed to upload image');
+      }
+
+      const data = await response.json();
+      console.log('Upload image success response:', data);
+      return { image_url: data.image_url || data.url };
+    } catch (error) {
+      console.error('Upload image error:', error);
+      if (error instanceof Error) {
+        throw new Error(`Upload image failed: ${error.message}`);
+      }
+      throw new Error('An unexpected error occurred while uploading image');
+    }
+  },
+
+  // Update user profile with image
+  async updateUserProfile(userId: string, data: UpdateUserData & { image?: File }): Promise<User> {
+    try {
+      let imageUrl: string | undefined;
+
+      // If there's a new image, upload it first
+      if (data.image) {
+        try {
+          const imageResponse = await this.uploadProfileImage(data.image);
+          imageUrl = imageResponse.image_url;
+          console.log('Image uploaded successfully:', imageUrl);
+        } catch (error) {
+          console.error('Image upload failed:', error);
+          // Continue with profile update even if image upload fails
+        }
+      }
+
+      // Prepare the update data
+      const updateData = {
+        ...data,
+        image_url: imageUrl,
+      };
+      delete updateData.image; // Remove the File object before sending
+
+      console.log('Updating profile with data:', updateData);
+
+      const response = await fetch(`${API_URL}/getuserbyid/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('Update profile error response:', errorData);
+        throw new Error(errorData?.message || 'Failed to update user profile');
+      }
+
+      const updatedUser = await response.json();
+      console.log('Profile updated successfully:', updatedUser);
+      return updatedUser;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      if (error instanceof Error) {
+        throw new Error(`Update profile failed: ${error.message}`);
+      }
+      throw new Error('An unexpected error occurred while updating profile');
     }
   }
 };

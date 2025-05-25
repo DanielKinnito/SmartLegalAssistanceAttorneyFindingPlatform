@@ -1,11 +1,47 @@
 "use client"
 
-import { useState } from "react"
+import * as React from "react"
+import { useState, useEffect } from "react"
 import { adminService, Document, CreateDocumentData } from "@/app/services/admin-api"
 import { toast } from "react-hot-toast"
 import { useRouter } from "next/navigation"
 import { Plus, Edit, Trash2, FileText, Search } from "lucide-react"
-import React from "react"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+
+const CATEGORIES = [
+  { value: 'CONSTITUTIONAL', label: 'Constitutional' },
+  { value: 'CIVIL', label: 'Civil' },
+  { value: 'CRIMINAL', label: 'Criminal' },
+  { value: 'COMMERCIAL', label: 'Commercial' },
+  { value: 'LABOR', label: 'Labor' },
+  { value: 'FAMILY', label: 'Family' },
+  { value: 'INVESTMENT', label: 'Investment' },
+  { value: 'HUMAN_RIGHTS', label: 'Human Rights' }
+];
+
+const JURISDICTIONS = [
+  { value: 'FEDERAL', label: 'Federal Government' },
+  { value: 'ADDIS_ABABA', label: 'Addis Ababa Municipality' },
+  { value: 'OROMIA', label: 'Oromia Regional State' },
+  { value: 'TIGRAY', label: 'Tigray Regional State' },
+  { value: 'AMHARA', label: 'Amhara Regional State' },
+  { value: 'SNNPR', label: 'Southern Nations, Nationalities, and Peoples\' Regional State (SNNPR)' },
+  { value: 'SIDAMA', label: 'Sidama Regional State' },
+  { value: 'AFAR', label: 'Afar Regional State' },
+  { value: 'SOMALI', label: 'Somali Regional State' },
+  { value: 'BENISHANGUL_GUMUZ', label: 'Benishangul-Gumuz Regional State' },
+  { value: 'GAMBELA', label: 'Gambela Regional State' },
+  { value: 'HARARI', label: 'Harari Regional State' },
+  { value: 'DIRE_DAWA', label: 'Dire Dawa City Administration' }
+];
+
+// Add this custom styling for Select components
+const selectStyles = {
+  trigger: "w-full bg-[#29374A] text-white border-none hover:bg-[#1f2a3a] focus:ring-2 focus:ring-[#29374A]",
+  content: "bg-white border border-gray-200 rounded-lg shadow-lg",
+  item: "text-gray-700 hover:bg-gray-100 cursor-pointer",
+  value: "text-white"
+};
 
 export default function ContentManagement() {
   const [documents, setDocuments] = useState<Document[]>([])
@@ -14,9 +50,10 @@ export default function ContentManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedJurisdiction, setSelectedJurisdiction] = useState<string>("all")
   const router = useRouter()
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchDocuments()
   }, [])
 
@@ -201,6 +238,22 @@ export default function ContentManagement() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+            <Select
+              value={selectedJurisdiction}
+              onValueChange={setSelectedJurisdiction}
+            >
+              <SelectTrigger className={selectStyles.trigger}>
+                <SelectValue placeholder="Select Jurisdiction" className={selectStyles.value} />
+              </SelectTrigger>
+              <SelectContent className={selectStyles.content}>
+                <SelectItem value="all" className={selectStyles.item}>All Jurisdictions</SelectItem>
+                {JURISDICTIONS.map((jurisdiction) => (
+                  <SelectItem key={jurisdiction.value} value={jurisdiction.value} className={selectStyles.item}>
+                    {jurisdiction.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {isLoading ? (
@@ -309,21 +362,33 @@ export default function ContentManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <input
-                      type="text"
-                      name="category"
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <Select name="category" required>
+                      <SelectTrigger className={selectStyles.trigger}>
+                        <SelectValue placeholder="Select category" className={selectStyles.value} />
+                      </SelectTrigger>
+                      <SelectContent className={selectStyles.content}>
+                        {CATEGORIES.map((category) => (
+                          <SelectItem key={category.value} value={category.value} className={selectStyles.item}>
+                            {category.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Jurisdiction</label>
-                    <input
-                      type="text"
-                      name="jurisdiction"
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <Select name="jurisdiction" required>
+                      <SelectTrigger className={selectStyles.trigger}>
+                        <SelectValue placeholder="Select jurisdiction" className={selectStyles.value} />
+                      </SelectTrigger>
+                      <SelectContent className={selectStyles.content}>
+                        {JURISDICTIONS.map((jurisdiction) => (
+                          <SelectItem key={jurisdiction.value} value={jurisdiction.value} className={selectStyles.item}>
+                            {jurisdiction.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -423,23 +488,33 @@ export default function ContentManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <input
-                      type="text"
-                      name="category"
-                      defaultValue={selectedDocument.category}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <Select name="category" defaultValue={selectedDocument.category} required>
+                      <SelectTrigger className={selectStyles.trigger}>
+                        <SelectValue placeholder="Select category" className={selectStyles.value} />
+                      </SelectTrigger>
+                      <SelectContent className={selectStyles.content}>
+                        {CATEGORIES.map((category) => (
+                          <SelectItem key={category.value} value={category.value} className={selectStyles.item}>
+                            {category.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Jurisdiction</label>
-                    <input
-                      type="text"
-                      name="jurisdiction"
-                      defaultValue={selectedDocument.jurisdiction}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <Select name="jurisdiction" defaultValue={selectedDocument.jurisdiction} required>
+                      <SelectTrigger className={selectStyles.trigger}>
+                        <SelectValue placeholder="Select jurisdiction" className={selectStyles.value} />
+                      </SelectTrigger>
+                      <SelectContent className={selectStyles.content}>
+                        {JURISDICTIONS.map((jurisdiction) => (
+                          <SelectItem key={jurisdiction.value} value={jurisdiction.value} className={selectStyles.item}>
+                            {jurisdiction.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
