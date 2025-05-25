@@ -132,7 +132,7 @@ const SettingsPage: React.FC = () => {
         const formData = new FormData();
         formData.append('image', profileImage);
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/uploadimage`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/uploadimage`, {
           method: 'POST',
           body: formData,
           credentials: 'include',

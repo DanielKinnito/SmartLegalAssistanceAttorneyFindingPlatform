@@ -36,10 +36,47 @@ export default function LawSearch() {
   const handleSearch = async () => {
     try {
       setLoading(true)
-      const response = await adminService.getDocuments()
-  
-      setDocuments(response)
-      // setTotalResults(response.data.total)
+      const allDocuments = await adminService.getDocuments()
+      
+      // Filter documents based on search query
+      let filteredDocs = allDocuments.filter(doc => {
+        // Search query filter
+        const searchLower = searchQuery.toLowerCase()
+        const matchesSearch = searchQuery === "" || 
+          doc.title.toLowerCase().includes(searchLower) ||
+          doc.description.toLowerCase().includes(searchLower) ||
+          doc.proclamation_number.toLowerCase().includes(searchLower)
+
+        // Jurisdiction filter
+        const matchesJurisdiction = selectedFilters.jurisdiction.length === 0 || 
+          selectedFilters.jurisdiction.includes(doc.jurisdiction)
+
+        // Category filter
+        const matchesCategory = selectedFilters.category.length === 0 || 
+          selectedFilters.category.includes(doc.category)
+
+        return matchesSearch && matchesJurisdiction && matchesCategory
+      })
+
+      // Sort documents
+      filteredDocs = filteredDocs.sort((a, b) => {
+        switch (sortBy) {
+          case "date":
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          case "title":
+            return a.title.localeCompare(b.title)
+          default: // relevance
+            return 0
+        }
+      })
+
+      // Pagination
+      const startIndex = (currentPage - 1) * 10
+      const endIndex = startIndex + 10
+      const paginatedDocs = filteredDocs.slice(startIndex, endIndex)
+
+      setDocuments(paginatedDocs)
+      setTotalResults(filteredDocs.length)
     } catch (error) {
       toast.error("Failed to fetch legal documents")
       console.error("Search error:", error)
@@ -73,6 +110,14 @@ export default function LawSearch() {
   useEffect(() => {
     handleSearch()
   }, [currentPage, sortBy, selectedFilters])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleSearch()
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   return (
     <div className="min-h-screen bg-[#fafafa]">

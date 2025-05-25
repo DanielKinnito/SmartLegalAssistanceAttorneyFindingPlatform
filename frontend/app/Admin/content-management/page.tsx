@@ -29,7 +29,7 @@ export default function ContentManagement() {
       if (error instanceof Error) {
         if (error.message.includes('Authentication required')) {
           toast.error("Please log in to continue")
-          router.push('/login')
+          router.push('/Admin/login')
         } else {
           toast.error(error.message)
         }
@@ -164,12 +164,16 @@ export default function ContentManagement() {
     }
   }
 
-  const filteredDocuments = documents.filter(doc =>
-    doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.jurisdiction.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Filter documents based on search query
+  const filteredDocuments = documents.filter(doc => {
+    const searchLower = searchQuery.toLowerCase()
+    return searchQuery === "" || 
+      doc.title.toLowerCase().includes(searchLower) ||
+      doc.description.toLowerCase().includes(searchLower) ||
+      doc.category.toLowerCase().includes(searchLower) ||
+      doc.jurisdiction.toLowerCase().includes(searchLower) ||
+      doc.proclamation_number.toLowerCase().includes(searchLower)
+  })
 
   return (
     <div className="min-h-screen bg-[#fafafa] p-8">

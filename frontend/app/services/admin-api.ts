@@ -383,7 +383,7 @@ export const adminService = {
   async getDocuments(): Promise<Document[]> {
     try {
       const response = await fetch(`${API_URL}/documents`, {
-        headers: getAuthHeader(),
+        // headers: getAuthHeader(),
       });
 
       if (!response.ok) {
