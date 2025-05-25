@@ -27,6 +27,7 @@ import { useState } from 'react';
 
 export default function AttorneyLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const [isAvailable, setIsAvailable] = useState(true);
