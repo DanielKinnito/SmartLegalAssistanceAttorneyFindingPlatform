@@ -2,10 +2,12 @@
 
 import Image from 'next/image';
 import Navbar from '@/app/components/Navbar';
+import FloatingButton from '@/app/components/FloatingButton';
 
 export default function ContactUsPage() {
   return (
     <main className="bg-white min-h-screen font-serif">
+      <FloatingButton />
       {/* Hero Section */}
       <section className="relative h-[380px] md:h-[420px] flex flex-col justify-between">
         {/* Background image with overlay */}

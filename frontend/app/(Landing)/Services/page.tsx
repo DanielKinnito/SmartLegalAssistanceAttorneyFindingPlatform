@@ -2,10 +2,12 @@
 
 import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
+import FloatingButton from '@/app/components/FloatingButton'
 
 export default function ServicesPage() {
   return (
     <main className="bg-white text-[#222]">
+      <FloatingButton />
       {/* Hero Section */}
       <section className="relative min-h-[400px] flex flex-col justify-between">
         {/* Background image with overlay */}

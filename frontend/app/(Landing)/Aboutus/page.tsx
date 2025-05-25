@@ -2,10 +2,12 @@
 
 import Image from 'next/image';
 import Navbar from '@/app/components/Navbar';
+import FloatingButton from '@/app/components/FloatingButton';
 
 export default function About() {
   return (
     <div className="bg-white min-h-screen font-serif">
+      <FloatingButton />
       {/* Hero/Header Section with Background Image */}
       <div className="relative h-[420px] md:h-[500px] lg:h-[540px]">
         {/* Background Image */}

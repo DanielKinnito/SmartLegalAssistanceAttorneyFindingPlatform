@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Navbar from '../../components/Navbar';
-import AIChatbot from '../../components/AIChatbot';
+import FloatingButton from '../../components/FloatingButton';
 
 const partners = [
   { name: 'Daerazo', icon: '/daerazo.png' },
@@ -25,6 +25,7 @@ const news = [
 export default function Home() {
   return (
     <div className="font-serif bg-white">
+      <FloatingButton />
       {/* Hero Section - Updated to match reference image */}
       <div className="bg-[#101726] relative overflow-hidden">
         <Navbar />
@@ -76,7 +77,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Professional Services */}
       <section className="max-w-7xl mx-auto px-6 py-16 flex flex-col md:flex-row items-center gap-12">
         <div className="flex-1">
           <Image src="/decision.png" alt="Gavel" width={400} height={250} className="rounded-lg object-cover" />
@@ -247,7 +247,7 @@ m eu turpis molestie, dictum est a, mattis tellus.</p>
           © 2025 LawConnect. All rights reserved.
         </div>
       </footer>
-      <AIChatbot />
+      
     </div>
   );
 }
