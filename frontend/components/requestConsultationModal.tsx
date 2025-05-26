@@ -1,8 +1,6 @@
 "use client";
 
-import type React from "react";
-
-import { useState, useEffect } from "react"; // Import useEffect
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,11 +24,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { FileText, Loader2, Upload, X } from "lucide-react";
+import { FileText, Loader2, Upload, X, CheckCircle2 } from "lucide-react"; // Added CheckCircle2 for success icon
 
 interface Attorney {
-  id: string;
+  id: string; // This is the attorney's specific PROFILE ID
   user: {
+    id: string; // This is the attorney's USER ID
     first_name: string;
     last_name: string;
     email: string;
@@ -66,10 +65,10 @@ export default function RequestConsultationModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
-
-  // New state for handling the existing case check
-  const [hasExistingCase, setHasExistingCase] = useState(false);
-  const [isLoadingCaseStatus, setIsLoadingCaseStatus] = useState(true);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [submissionSuccess, setSubmissionSuccess] = useState<string | null>(
+    null
+  ); // New state for success message
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -79,77 +78,31 @@ export default function RequestConsultationModal({
     },
   });
 
-  // Effect to check if the user already has a case
+  // Reset form and states when the modal opens
   useEffect(() => {
-    const checkUserCases = async () => {
-      // Only proceed if modal is open and authToken is available
-      if (!isOpen || !authToken) {
-        setIsLoadingCaseStatus(false);
-        return;
-      }
-
-      setIsLoadingCaseStatus(true);
-      try {
-        // This GET request should fetch cases associated with the current user.
-        // Adjust the endpoint if your backend has a more specific way to check this.
-        const response = await fetch(
-          "https://main-backend-aan1.onrender.com/api/cases",
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          // Assuming the backend returns an array of cases for the user.
-          // If the array is not empty, the user has existing cases.
-          setHasExistingCase(Array.isArray(data) && data.length > 0);
-        } else {
-          // Log error but proceed, assuming no existing case if check fails
-          console.error(
-            "Failed to fetch user's case status:",
-            await response.json()
-          );
-          setHasExistingCase(false);
-        }
-      } catch (error) {
-        console.error("Error fetching user's case status:", error);
-        setHasExistingCase(false);
-      } finally {
-        setIsLoadingCaseStatus(false);
-      }
-    };
-
     if (isOpen) {
-      // Only run check when modal is active
-      checkUserCases();
-    } else {
-      // Reset state when modal closes
-      setHasExistingCase(false);
-      setIsLoadingCaseStatus(true); // Reset to true for next open
+      form.reset();
+      setUploadedFiles([]);
+      setFileError(null);
+      setSubmissionError(null);
+      setSubmissionSuccess(null); // Clear success message on open
     }
-  }, [isOpen, authToken]); // Depend on isOpen and authToken
+  }, [isOpen, form]);
 
   const onSubmit = async (values: FormData) => {
-    if (!attorney) {
-      alert("No attorney selected for consultation.");
+    setSubmissionError(null); // Clear any previous submission errors
+    setSubmissionSuccess(null); // Clear any previous success messages
+
+    // Frontend validation: Ensure attorney object and its user ID are present
+    if (!attorney || !attorney.user || !attorney.user.id) {
+      setSubmissionError(
+        "Attorney user information is incomplete. Please try again or select a different attorney."
+      );
       return;
     }
 
     if (!authToken) {
-      alert("You must be logged in to request a consultation.");
-      return;
-    }
-
-    // Frontend validation: Prevent submission if an existing case is detected
-    if (hasExistingCase) {
-      alert(
-        "You already have an active case associated with your account. You cannot create a new one with current system rules. Please contact support or update your existing case."
-      );
+      setSubmissionError("You must be logged in to request a consultation.");
       return;
     }
 
@@ -157,72 +110,63 @@ export default function RequestConsultationModal({
       setFileError("At least one document is required.");
       return;
     } else {
-      setFileError(null);
+      setFileError(null); // Clear file error if files are present
     }
 
     setIsSubmitting(true);
 
     try {
+      // --- Step 1: Create the Case ---
       const caseFormData = new FormData();
       caseFormData.append("title", values.caseTitle);
       caseFormData.append("description", values.caseDescription);
       uploadedFiles.forEach((file) => {
-        caseFormData.append("document", file); // Changed from 'documents' to 'document'
+        caseFormData.append("document", file);
       });
-
-      console.log("--- Submitting to /api/cases ---");
-      for (const [key, value] of caseFormData.entries()) {
-        console.log(`${key}:`, value);
-      }
 
       const caseCreationResponse = await fetch(
         "https://main-backend-aan1.onrender.com/api/cases",
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${authToken}`, // FormData handles Content-Type automatically
           },
           body: caseFormData,
         }
       );
 
       if (!caseCreationResponse.ok) {
-        const errorData = await caseCreationResponse.json().catch(() => ({
-          message: "Unknown error during case creation (non-JSON response).",
-        }));
-        console.error("Error response from /api/cases:", errorData);
+        let errorDetails = "Unknown error during case creation.";
+        try {
+          const errorData = await caseCreationResponse.json();
+          errorDetails = errorData.message || JSON.stringify(errorData);
+          if (errorData.errors) {
+            errorDetails += " Details: " + JSON.stringify(errorData.errors);
+          }
+        } catch (jsonError) {
+          const textError = await caseCreationResponse.text();
+          errorDetails = `Non-JSON error: ${textError}`;
+        }
         throw new Error(
-          errorData.message ||
-            `Failed to create case: HTTP ${caseCreationResponse.status}`
+          `Failed to create case: HTTP ${caseCreationResponse.status}. ${errorDetails}`
         );
       }
 
-      const createdCase = await caseCreationResponse.json();
-      // --- START DEBUGGING LOG ---
-      console.log("Full successful response from /api/cases:", createdCase);
-      // --- END DEBUGGING LOG ---
+      const createdCaseData = await caseCreationResponse.json();
 
-      const caseId = createdCase.id; // Expecting 'id' property here
-
+      // Verify and extract caseId
+      const caseId = createdCaseData.data?.id;
       if (!caseId) {
-        // --- START DEBUGGING LOG ---
-        console.error(
-          "Backend response for /api/cases did not contain an 'id' property:",
-          createdCase
-        );
-        // --- END DEBUGGING LOG ---
         throw new Error(
-          "Case ID not returned from /api/cases, cannot proceed with case request. Please check backend response structure."
+          "Failed to create case: Case ID could not be retrieved from the server response."
         );
       }
 
+      // --- Step 2: Create the Case Request to link the case and attorney ---
       const caseRequestPayload = {
-        case: caseId,
-        attorney: attorney.id,
+        case: caseId, // Using the extracted case ID
+        attorney: attorney.user.id, // Using the attorney's user ID
       };
-
-      console.log("--- Submitting to /api/case-requests ---");
-      console.log("Payload:", caseRequestPayload);
 
       const caseRequestResponse = await fetch(
         "https://main-backend-aan1.onrender.com/api/case-requests",
@@ -237,56 +181,67 @@ export default function RequestConsultationModal({
       );
 
       if (!caseRequestResponse.ok) {
-        const errorData = await caseRequestResponse.json().catch(() => ({
-          message:
-            "Unknown error during request association (non-JSON response).",
-        }));
-        console.error("Error response from /api/case-requests:", errorData);
+        let errorDetails = "Unknown error during request association.";
+        try {
+          const errorData = await caseRequestResponse.json();
+          errorDetails = errorData.message || JSON.stringify(errorData);
+          if (errorData.errors) {
+            errorDetails += " Details: " + JSON.stringify(errorData.errors);
+          }
+        } catch (jsonError) {
+          const textError = await caseRequestResponse.text();
+          errorDetails = `Non-JSON error: ${textError}`;
+        }
         throw new Error(
-          errorData.message ||
-            `Failed to associate case with attorney: HTTP ${caseRequestResponse.status}`
+          `Failed to associate case with attorney: HTTP ${caseRequestResponse.status}. ${errorDetails}`
         );
       }
 
-      console.log("Successful response from /api/case-requests.");
-
-      setIsSubmitting(false);
-      onClose();
-      form.reset();
-      setUploadedFiles([]);
-      setFileError(null);
-      alert("Consultation request submitted successfully!");
+      // Set success message and then close modal after a delay
+      setSubmissionSuccess("Consultation request submitted successfully!");
+      setTimeout(() => {
+        onClose(); // Close the modal
+        form.reset(); // Reset form fields
+        setUploadedFiles([]); // Clear uploaded files
+        setFileError(null); // Clear any file errors
+        setSubmissionSuccess(null); // Clear success message after modal closes
+      }, 7000); // Display message for 7 seconds before closing
     } catch (error: unknown) {
-      console.error("Submission error:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred. Please try again.";
+      setSubmissionError(`Error submitting request: ${errorMessage}`);
+    } finally {
       setIsSubmitting(false);
-      alert(
-        `Error submitting request: ${
-          error instanceof Error ? error.message : "Please try again."
-        }`
-      );
     }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    const validFiles = files.filter((file) => file.size <= 5 * 1024 * 1024);
+    const validFiles = files.filter((file) => file.size <= 5 * 1024 * 1024); // 5MB
 
     if (files.length !== validFiles.length) {
       alert("Some files exceeded the 5MB size limit and were not added.");
     }
 
     setUploadedFiles((prev) => [...prev, ...validFiles]);
-    setFileError(null);
+    setFileError(null); // Clear file error when new files are added
   };
 
   const removeFile = (index: number) => {
-    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
-    if (uploadedFiles.length === 1 && fileError) {
-      setFileError("At least one document is required.");
-    }
+    setUploadedFiles((prev) => {
+      const newFiles = prev.filter((_, i) => i !== index);
+      // If no files left after removal, set file error
+      if (newFiles.length === 0) {
+        setFileError("At least one document is required.");
+      }
+      return newFiles;
+    });
   };
 
-  if (!attorney) return null;
+  // Don't render modal if attorney or its user ID is missing
+  if (!attorney || !attorney.user || !attorney.user.id) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -302,208 +257,202 @@ export default function RequestConsultationModal({
           </DialogDescription>
         </DialogHeader>
 
-        {isLoadingCaseStatus ? (
-          <div className="flex flex-col items-center justify-center h-48">
-            <Loader2 className="h-8 w-8 animate-spin text-[#1e2e45] mb-2" />
-            <span className="text-gray-600">
-              Checking your existing case status...
-            </span>
-          </div>
-        ) : hasExistingCase ? (
-          <div className="text-center p-6 bg-yellow-50 border border-yellow-200 rounded-lg shadow-sm">
-            <p className="text-yellow-800 font-semibold text-lg mb-4">
-              You already have an active case associated with your account.
-            </p>
-            <p className="text-gray-700 text-sm mb-6">
-              According to current system rules, you cannot create a new case.
-              Please contact support if you need to update your existing case or
-              if you believe this is an error.
-            </p>
-            <Button
-              type="button"
-              onClick={onClose}
-              className="bg-[#1e2e45] hover:bg-[#1e2e45]/90"
-            >
-              Close
-            </Button>
-          </div>
-        ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Case Title Form Field */}
-              <FormField
-                control={form.control}
-                name="caseTitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Case Title</FormLabel>
-                    <FormControl>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Success Message Display */}
+            {submissionSuccess && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative flex items-center justify-center text-center">
+                <CheckCircle2 className="h-5 w-5 mr-2" />
+                <span className="block sm:inline">{submissionSuccess}</span>
+              </div>
+            )}
+
+            {/* Form Fields (hidden when success message is shown) */}
+            {!submissionSuccess && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="caseTitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Case Title</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="E.g., Property Dispute Resolution"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Provide a brief title that summarizes your legal issue.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="caseDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Case Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Please provide a detailed description of your legal issue, including relevant background information, timeline, and specific questions you'd like to discuss..."
+                          className="resize-none min-h-[150px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Provide as much detail as possible to help the attorney
+                        understand your case.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">
+                      Supporting Documents
+                    </label>
+                    <span className="text-xs text-gray-500">Required</span>
+                  </div>
+
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <FileText className="h-10 w-10 text-gray-400 mb-2" />
+                      <h3 className="text-sm font-medium mb-1">
+                        Upload Case Documents
+                      </h3>
+                      <p className="text-xs text-gray-500 mb-4">
+                        Upload relevant legal documents to help the attorney
+                        understand your case better
+                      </p>
                       <Input
-                        placeholder="E.g., Property Dispute Resolution"
-                        {...field}
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="file-upload"
                       />
-                    </FormControl>
-                    <FormDescription>
-                      Provide a brief title that summarizes your legal issue.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Case Description Form Field */}
-              <FormField
-                control={form.control}
-                name="caseDescription"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Case Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Please provide a detailed description of your legal issue, including relevant background information, timeline, and specific questions you'd like to discuss..."
-                        className="resize-none min-h-[150px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Provide as much detail as possible to help the attorney
-                      understand your case.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Document Upload Section UI */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">
-                    Supporting Documents
-                  </label>
-                  <span className="text-xs text-gray-500">Required</span>
-                </div>
-
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <FileText className="h-10 w-10 text-gray-400 mb-2" />
-                    <h3 className="text-sm font-medium mb-1">
-                      Upload Case Documents
-                    </h3>
-                    <p className="text-xs text-gray-500 mb-4">
-                      Upload relevant legal documents to help the attorney
-                      understand your case better
-                    </p>
-                    <Input
-                      type="file"
-                      multiple
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      id="file-upload"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() =>
-                        document.getElementById("file-upload")?.click()
-                      }
-                      className="bg-[#1e2e45] text-white hover:bg-[#1e2e45]/90"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Select Files
-                    </Button>
-                  </div>
-                  <div className="mt-3">
-                    <p className="text-xs text-center text-gray-500">
-                      Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 5MB per
-                      file)
-                    </p>
-                  </div>
-                </div>
-
-                {fileError && (
-                  <p className="text-sm font-medium text-red-500 mt-2 text-center">
-                    {fileError}
-                  </p>
-                )}
-
-                {/* Display List of Uploaded Files */}
-                {uploadedFiles.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium">
-                        Uploaded Documents ({uploadedFiles.length})
-                      </h4>
-                      {uploadedFiles.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setUploadedFiles([]);
-                            setFileError("At least one document is required.");
-                          }}
-                          className="text-xs text-red-500 hover:text-red-700"
-                        >
-                          Remove All
-                        </Button>
-                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          document.getElementById("file-upload")?.click()
+                        }
+                        className="bg-[#1e2e45] text-white hover:bg-[#1e2e45]/90"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Select Files
+                      </Button>
                     </div>
-                    <div className="border rounded-md divide-y">
-                      {uploadedFiles.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <FileText className="h-5 w-5 text-[#1e2e45]" />
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium truncate max-w-[300px]">
-                                {file.name}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {(file.size / 1024).toFixed(1)} KB
-                              </span>
-                            </div>
-                          </div>
+                    <div className="mt-3">
+                      <p className="text-xs text-center text-gray-500">
+                        Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 5MB per
+                        file)
+                      </p>
+                    </div>
+                  </div>
+
+                  {fileError && (
+                    <p className="text-sm font-medium text-red-500 mt-2 text-center">
+                      {fileError}
+                    </p>
+                  )}
+
+                  {uploadedFiles.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">
+                          Uploaded Documents ({uploadedFiles.length})
+                        </h4>
+                        {uploadedFiles.length > 0 && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeFile(index)}
+                            onClick={() => {
+                              setUploadedFiles([]);
+                              setFileError(
+                                "At least one document is required."
+                              );
+                            }}
+                            className="text-xs text-red-500 hover:text-red-700"
                           >
-                            <X className="h-4 w-4" />
+                            Remove All
                           </Button>
-                        </div>
-                      ))}
+                        )}
+                      </div>
+                      <div className="border rounded-md divide-y">
+                        {uploadedFiles.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <FileText className="h-5 w-5 text-[#1e2e45]" />
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium truncate max-w-[300px]">
+                                  {file.name}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {(file.size / 1024).toFixed(1)} KB
+                                </span>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFile(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Dialog Footer with Action Buttons */}
-              <DialogFooter className="flex gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || hasExistingCase} // Disable if existing case found
-                  className="bg-[#1e2e45] hover:bg-[#1e2e45]/90"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting Request...
-                    </>
-                  ) : (
-                    "Submit Consultation Request"
                   )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        )}
+                </div>
+              </>
+            )}
+
+            {submissionError && (
+              <p className="text-sm font-medium text-red-500 text-center mt-4">
+                {submissionError}
+              </p>
+            )}
+
+            <DialogFooter className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || !!submissionSuccess} // Disable submit button if success message is showing
+                className="bg-[#1e2e45] hover:bg-[#1e2e45]/90"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting Request...
+                  </>
+                ) : (
+                  "Submit Consultation Request"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
