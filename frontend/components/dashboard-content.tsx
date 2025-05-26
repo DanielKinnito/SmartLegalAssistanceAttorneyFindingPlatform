@@ -1,172 +1,156 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Eye } from "lucide-react"
-import { DashboardChart } from "@/components/dashboard-chart"
-import { RecentRegistrations } from "@/components/recent-registrations"
-import { PendingApprovals } from "@/components/pending-approvals"
-import { SystemAlerts } from "@/components/system-alerts"
+import React, { useEffect, useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Eye, Users, Briefcase, AlertCircle, FileText } from "lucide-react";
+import { adminService, UserResponse } from "@/app/services/admin-api";
+import { toast } from "react-hot-toast";
+import { DashboardChart } from "./dashboard-chart";
+
+interface DashboardStats {
+  totalUsers: number;
+  attorneys: number;
+  pendingApprovals: number;
+  activeRequests: number;
+}
 
 export function DashboardContent() {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalUsers: 0,
+    attorneys: 0,
+    pendingApprovals: 0,
+    activeRequests: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const users = await adminService.getUserAttorney();
+
+        const stats: DashboardStats = {
+          totalUsers: users.length,
+          attorneys: users.filter((user) => adminService.isAttorney(user)).length,
+          pendingApprovals: users.filter(
+            (user) => adminService.isAttorney(user) && !user.User.data.is_approved
+          ).length,
+          activeRequests: users.filter(
+            (user) => adminService.isClient(user) && user.User.data.probono_status === "pending"
+          ).length,
+        };
+
+        setStats(stats);
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+        setError(err instanceof Error ? err.message : "Failed to load dashboard data");
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg shadow-sm">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-6 space-y-8 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center max-w-7xl mx-auto">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome to the admin dashboard, here is an overview of your platform</p>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Admin Dashboard</h1>
+          <p className="text-gray-500 mt-2 text-sm">
+            Overview of platform metrics and activity
+          </p>
         </div>
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-1 border-[#29374A] text-[#29374A] hover:bg-[#29374A] hover:text-white"
+          className="h-10 px-4 gap-2 border-[#29374A] text-[#29374A] hover:bg-[#29374A] hover:text-white transition-colors duration-300 rounded-md"
         >
-          <Eye className="h-3.5 w-3.5" />
+          <Eye className="h-4 w-4" />
           View Site
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
+        <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-300 rounded-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
+            <Users className="h-5 w-5 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,248</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
+            <div className="text-3xl font-bold text-gray-900">{stats.totalUsers}</div>
+            <p className="text-xs text-gray-500 mt-1">Total registered users</p>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-300 rounded-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Attorneys</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <CardTitle className="text-sm font-medium text-gray-600">Attorneys</CardTitle>
+            <Briefcase className="h-5 w-5 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">321</div>
-            <p className="text-xs text-muted-foreground">+5% from last month</p>
+            <div className="text-3xl font-bold text-gray-900">{stats.attorneys}</div>
+            <p className="text-xs text-gray-500 mt-1">Registered attorneys</p>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-300 rounded-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <rect width="20" height="14" x="2" y="5" rx="2" />
-              <path d="M2 10h20" />
-            </svg>
+            <CardTitle className="text-sm font-medium text-gray-600">Pending Approvals</CardTitle>
+            <AlertCircle className="h-5 w-5 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">Requires Attention</p>
+            <div className="text-3xl font-bold text-gray-900">{stats.pendingApprovals}</div>
+            <p className="text-xs text-gray-500 mt-1">Requires attention</p>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-300 rounded-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Requests</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
+            <CardTitle className="text-sm font-medium text-gray-600">Active Requests</CardTitle>
+            <FileText className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">573</div>
-            <p className="text-xs text-muted-foreground">+18% from last month</p>
+            <div className="text-3xl font-bold text-gray-900">{stats.activeRequests}</div>
+            <p className="text-xs text-gray-500 mt-1">Pending pro bono requests</p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>Platform Activity</CardTitle>
-                <p className="text-sm text-muted-foreground">User activity over the past 30 days</p>
-              </CardHeader>
-              <CardContent className="pl-2">
-                <DashboardChart />
-              </CardContent>
-            </Card>
-            <Card className="col-span-3">
-              <CardHeader>
-                <CardTitle>Recent Registrations</CardTitle>
-                <p className="text-sm text-muted-foreground">New users in the last 7 days</p>
-              </CardHeader>
-              <CardContent>
-                <RecentRegistrations />
-              </CardContent>
-            </Card>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>Pending Attorney Approval</CardTitle>
-                <p className="text-sm text-muted-foreground">Attorneys awaiting verification</p>
-              </CardHeader>
-              <CardContent>
-                <PendingApprovals />
-              </CardContent>
-            </Card>
-            <Card className="col-span-3">
-              <CardHeader>
-                <CardTitle>System Alerts</CardTitle>
-                <p className="text-sm text-muted-foreground">Items that require attention</p>
-              </CardHeader>
-              <CardContent>
-                <SystemAlerts />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="max-w-7xl mx-auto">
+        <Card className="bg-white shadow-sm hover:shadow-md transition-shadow duration-300 rounded-lg">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-gray-900">Platform Activity</CardTitle>
+            <p className="text-sm text-gray-500">User activity over the past 30 days</p>
+          </CardHeader>
+          <CardContent>
+            <div className="relative w-full aspect-[4/3] max-w-[1200px] mx-auto p-6">
+              <DashboardChart />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
-  )
+  );
 }

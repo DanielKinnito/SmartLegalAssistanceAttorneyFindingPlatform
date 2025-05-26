@@ -163,31 +163,77 @@ export function ContentManagement() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Select defaultValue="all-categories">
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all-categories">All Categories</SelectItem>
-                    <SelectItem value="family-law">Family Law</SelectItem>
-                    <SelectItem value="property-law">Property Law</SelectItem>
-                    <SelectItem value="business-law">Business Law</SelectItem>
-                    <SelectItem value="criminal-law">Criminal Law</SelectItem>
-                  </SelectContent>
-                </Select>
+  <Select defaultValue="all-categories">
+    <SelectTrigger className="w-[180px]">
+      <SelectValue placeholder="All Categories" />
+    </SelectTrigger>
+    <SelectContent className="bg-gray-900 text-white border-none">
+      <SelectItem
+        value="all-categories"
+        className="hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+      >
+        All Categories
+      </SelectItem>
+      <SelectItem
+        value="family-law"
+        className="hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+      >
+        Family Law
+      </SelectItem>
+      <SelectItem
+        value="property-law"
+        className="hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+      >
+        Property Law
+      </SelectItem>
+      <SelectItem
+        value="business-law"
+        className="hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+      >
+        Business Law
+      </SelectItem>
+      <SelectItem
+        value="criminal-law"
+        className="hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+      >
+        Criminal Law
+      </SelectItem>
+    </SelectContent>
+  </Select>
 
-                <Select defaultValue="all-statuses">
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all-statuses">All Statuses</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+  <Select defaultValue="all-statuses">
+    <SelectTrigger className="w-[180px]">
+      <SelectValue placeholder="All Statuses" />
+    </SelectTrigger>
+    <SelectContent className="bg-gray-900 text-white border-none">
+      <SelectItem
+        value="all-statuses"
+        className="hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+      >
+        All Statuses
+      </SelectItem>
+      <SelectItem
+        value="published"
+        className="hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+      >
+        Published
+      </SelectItem>
+      <SelectItem
+        value="draft"
+        className="hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+      >
+        Draft
+      </SelectItem>
+      <SelectItem
+        value="archived"
+        className="hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+      >
+        Archived
+      </SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+
             </div>
 
             <div className="rounded-md border">

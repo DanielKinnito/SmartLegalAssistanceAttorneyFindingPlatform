@@ -1,14 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
-  async rewrites() {
-    return [
-      {
-        source: "/",
-        destination: "/",
-      },
-    ];
+  /* config options here */
+  images: {
+    domains: ['res.cloudinary.com'], 
   },
 };
 

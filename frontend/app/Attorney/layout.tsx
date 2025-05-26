@@ -24,9 +24,15 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { useRouter } from "next/navigation";
+import Script from 'next/script';
+import { logout } from "@/app/services/attorney_api";
+
+
 
 export default function AttorneyLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const [isAvailable, setIsAvailable] = useState(true);
@@ -34,7 +40,7 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
   const navItems = [
     { text: 'Law Search', icon: <Search className="w-5 h-5" />, path: '/Attorney/law-search' },
     { text: 'AI Bot', icon: <ChatBubbleOutline className="w-5 h-5" />, path: '/Attorney/ai-bot' },
-    { text: 'Legal Requests', path: '/Attorney/LegalRequest' },
+    { text: 'Legal Requests', path: '/Attorney/legalRequest' },
   ];
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -48,9 +54,25 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
   const toggleAvailability = () => {
     setIsAvailable(!isAvailable);
   };
+const handleLogout = () => {
+
+    console.log("Logging out...");
+    logout();
+    router.push("/signin");
+  };
+ 
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen ">
+      <Script
+      src="https://assets.calendly.com/assets/external/widget.js"
+      strategy="beforeInteractive"
+    />
+    <link
+      href="https://assets.calendly.com/assets/external/widget.css"
+      rel="stylesheet"
+    />
+
       {/* Top Navigation Bar */}
       <AppBar 
         position="static" 
@@ -60,7 +82,7 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
           boxShadow: 'none'
         }}
       >
-        <Toolbar className="flex justify-between px-4">
+        <Toolbar className="flex justify-between px-4 ">
           {/* Left - Logo */}
           <Link href="/" passHref>
             <Typography 
@@ -72,7 +94,7 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
                 color: 'white'
               }}
             >
-              LawConnect
+              LegalConnect
             </Typography>
           </Link>
 
@@ -96,19 +118,7 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
           </div>
 
           <div className="flex items-center gap-3 border-1 border-white p-1 rounded-full">
-            <IconButton sx={{ 
-              color: '#1E2E45',
-              backgroundColor: 'white',
-              width: 27,
-              height: 27,
-              '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.8)'
-              }
-            }}>
-              <Badge badgeContent={3} color="error">
-                <NotificationsNone />
-              </Badge>
-            </IconButton>
+            
 
             <Box 
               sx={{
@@ -147,17 +157,19 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
               
             </Box>
 
-            <Chip
-                avatar={<Avatar alt="Natacha" src="https://i.pinimg.com/736x/cd/4b/d9/cd4bd9b0ea2807611ba3a67c331bff0b.jpg" />}
-                label="Avatar"
-                sx={{
-                    backgroundColor: 'white',
-                    cursor: 'pointer',
-                    '&:hover': {
-                        backgroundColor: 'rgba(255,255,255,0.9)'
-                    }
-                }}
-                />
+           <Chip
+            onClick={handleMenuOpen}
+            onClose={handleMenuClose}
+            avatar={<Avatar alt="Natacha" src="https://i.pinimg.com/736x/cd/4b/d9/cd4bd9b0ea2807611ba3a67c331bff0b.jpg" />}
+            label="Avatar"
+            sx={{
+              backgroundColor: 'white',
+              cursor: 'pointer',
+              '&:hover': {
+                backgroundColor: 'rgba(255,255,255,0.9)'
+              }
+            }}
+          />
 
             <Menu
               anchorEl={anchorEl}
@@ -183,15 +195,15 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
                 }
               }}
             >
-              <MenuItem onClick={handleMenuClose}>
-                <Avatar sx={{ width: 32, height: 32, mr: 1 }} /> Profile
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose}>
-                <Person fontSize="small" sx={{ mr: 1 }} /> My Account
+              <MenuItem >
+                <Avatar sx={{ width: 32, height: 32, mr: 1 }}
+                onClick={() => router.push('/Attorney/profile')}
+                /> Profile
               </MenuItem>
               <Divider />
-              <MenuItem onClick={handleMenuClose}>
-                <ExitToApp fontSize="small" sx={{ mr: 1 }} /> Logout
+              <MenuItem onClick={() => { handleLogout(); handleMenuClose(); }} >
+                <ExitToApp fontSize="small" sx={{ mr: 1 }} 
+                 /> Logout
               </MenuItem>
             </Menu>
           </div>
