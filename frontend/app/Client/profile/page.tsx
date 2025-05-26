@@ -290,7 +290,7 @@ const ProfilePage: React.FC = () => {
           {/* Profile Image Section */}
           <div className="flex flex-col items-center mb-6">
             {profileData.image ? (
-              <Image
+              <img
                 src={profileData.image}
                 alt="Profile Picture"
                 width={120}

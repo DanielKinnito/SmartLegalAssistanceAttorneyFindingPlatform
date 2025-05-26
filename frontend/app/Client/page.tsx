@@ -379,7 +379,7 @@ export default function FindAttorney() {
               >
                 <div className="mr-0 md:mr-6 mb-4 md:mb-0 flex-shrink-0">
                   {attorney.user.image ? (
-                    <Image
+                    <img
                       src={attorney.user.image}
                       alt={`${attorney.user.first_name} ${attorney.user.last_name}`}
                       width={128}
