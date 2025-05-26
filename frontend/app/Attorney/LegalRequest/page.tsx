@@ -238,7 +238,7 @@ const Home: React.FC = () => {
 
       // Categorize requests by age
       const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 2);
       const recent: LegalRequest[] = [];
       const late: LegalRequest[] = [];
       legalRequests.forEach((request: LegalRequest) => {

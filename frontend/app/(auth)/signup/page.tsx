@@ -23,10 +23,9 @@ export default function SignupPage() {
           Facilitates connections between the community and affordable attorneys
         </p>
         <button
-          className="px-7 py-1 rounded-4xl text-blue-950 bg-white hover:bg-gray-100 transition-colors 
-          cursor-pointer"
+          className="px-7 py-1 rounded-4xl text-blue-950 bg-white hover:bg-gray-100 transition-colors cursor-pointer"
           type="button"
-          onClick={() => router.push("/signin")} // Navigate to signin page
+          onClick={() => router.push("/signin")}
         >
           Login
         </button>

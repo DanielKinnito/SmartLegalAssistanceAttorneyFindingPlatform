@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"; // For loading state placeh
 interface Attorney {
   id: string;
   user: {
+    id: string;
     first_name: string;
     last_name: string;
     email: string;
@@ -378,7 +379,7 @@ export default function FindAttorney() {
               >
                 <div className="mr-0 md:mr-6 mb-4 md:mb-0 flex-shrink-0">
                   {attorney.user.image ? (
-                    <Image
+                    <img
                       src={attorney.user.image}
                       alt={`${attorney.user.first_name} ${attorney.user.last_name}`}
                       width={128}
@@ -464,7 +465,7 @@ export default function FindAttorney() {
 
                   <div className="flex space-x-3 justify-center md:justify-start">
                     <Link
-                      href={`/attorney/${attorney.id}`}
+                      href={`/Client/attorney/${attorney.user.id}`}
                       className="bg-[#18181b] text-white px-6 py-2 rounded text-sm hover:bg-[#18181b]/90 transition-colors"
                     >
                       View Profile

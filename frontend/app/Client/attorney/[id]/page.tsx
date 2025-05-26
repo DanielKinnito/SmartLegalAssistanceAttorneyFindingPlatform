@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useState, useEffect } from "react";
+import React from "react";
 import {
   Star,
   CheckCircle,
@@ -13,10 +13,9 @@ import {
   GraduationCap,
   Award,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton"; // For loading state placeholders
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 
-// Define interfaces to match the backend response structure
 interface Education {
   id: string;
   institution: string;
@@ -55,23 +54,22 @@ interface Attorney {
 }
 
 export default function AttorneyProfile({
-  params,
+  params: paramsPromise,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const params = React.use(paramsPromise);
   const [attorney, setAttorney] = useState<Attorney | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const router = useRouter();
 
-  // Fetch authentication token from localStorage on mount
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     setAuthToken(token);
   }, []);
 
-  // Fetch attorney data based on params.id
   useEffect(() => {
     const fetchAttorney = async () => {
       setIsLoading(true);
@@ -84,7 +82,7 @@ export default function AttorneyProfile({
         setError("You must be logged in to view attorney details.");
         setIsLoading(false);
         setTimeout(() => {
-          router.push("/login?redirect=/attorney/" + params.id);
+          router.push(`/login?redirect=/attorney/${params.id}`);
         }, 2000);
         return;
       }
@@ -109,7 +107,7 @@ export default function AttorneyProfile({
             localStorage.removeItem("access_token");
             setError("Session expired. Please log in again.");
             setTimeout(() => {
-              router.push("/login?redirect=/attorney/" + params.id);
+              router.push(`/login?redirect=/attorney/${params.id}`);
             }, 2000);
             return;
           }
@@ -119,6 +117,7 @@ export default function AttorneyProfile({
         }
 
         const data: Attorney = await response.json();
+        console.log("API /attorney/available response:", data); // Debug log
         setAttorney(data);
       } catch (err) {
         const errorMessage =
@@ -132,12 +131,16 @@ export default function AttorneyProfile({
       }
     };
 
-    fetchAttorney();
+    if (params.id) {
+      fetchAttorney();
+    } else {
+      setError("Invalid attorney ID");
+      setIsLoading(false);
+    }
   }, [params.id, router]);
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">Attorney Profile</h1>
 
@@ -163,13 +166,11 @@ export default function AttorneyProfile({
 
         {attorney && !isLoading && !error && (
           <div className="flex flex-col md:flex-row gap-6">
-            {/* Left Sidebar */}
             <div className="w-full md:w-1/4 space-y-6">
-              {/* Profile Card */}
               <div className="bg-white border border-[#e4e4e7] rounded-lg p-6">
                 <div className="flex flex-col items-center">
                   {attorney.image ? (
-                    <Image
+                    <img
                       src={attorney.image}
                       alt={`${attorney.first_name} ${attorney.last_name}`}
                       width={128}
@@ -212,7 +213,6 @@ export default function AttorneyProfile({
                 </div>
               </div>
 
-              {/* Availability Card */}
               <div className="bg-white border border-[#e4e4e7] rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">Availability</h3>
                 <div className="mb-4">
@@ -260,7 +260,6 @@ export default function AttorneyProfile({
                 </div>
               </div>
 
-              {/* Pro Bono Work Card */}
               <div className="bg-white border border-[#e4e4e7] rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">Pro Bono Work</h3>
                 <div className="mb-4">
@@ -316,9 +315,7 @@ export default function AttorneyProfile({
               </div>
             </div>
 
-            {/* Right Content */}
             <div className="w-full md:w-3/4">
-              {/* Tabs */}
               <div className="flex border-b border-[#e4e4e7] mb-6">
                 <button className="px-6 py-3 border-b-2 border-[#1e2e45] font-medium">
                   Profile
@@ -327,7 +324,6 @@ export default function AttorneyProfile({
                 <button className="px-6 py-3 text-[#71717a]">Reviews</button>
               </div>
 
-              {/* Personal Information */}
               <div className="bg-white border border-[#e4e4e7] rounded-lg p-6 mb-6">
                 <h2 className="text-xl font-bold mb-6">Personal Information</h2>
 
@@ -436,16 +432,15 @@ export default function AttorneyProfile({
                   <div className="border border-[#e4e4e7] rounded-md p-3">
                     <p className="text-sm">
                       {attorney.attorney.profile_completion > 0
-                        ? "Experienced attorney specializing in " +
-                          attorney.attorney.expertise.join(", ") +
-                          "."
+                        ? `Experienced attorney specializing in ${attorney.attorney.expertise.join(
+                            ", "
+                          )}.`
                         : "Biography not provided."}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Professional Information */}
               <div className="bg-white border border-[#e4e4e7] rounded-lg p-6 mb-6">
                 <h2 className="text-xl font-bold mb-6">
                   Professional Information
@@ -525,7 +520,7 @@ export default function AttorneyProfile({
                                 (edu) =>
                                   `${edu.degree}, ${edu.institution}, ${edu.year}`
                               )
-                              .join("<br />")
+                              .join("; ")
                           : "Not specified"}
                       </span>
                     </div>
@@ -547,7 +542,6 @@ export default function AttorneyProfile({
                 </div>
               </div>
 
-              {/* Reviews Section */}
               <div className="bg-white border border-[#e4e4e7] rounded-lg p-6">
                 <h2 className="text-xl font-bold mb-6">Reviews</h2>
                 <div className="text-center text-[#71717a]">
