@@ -1,21 +1,10 @@
 import type { Metadata } from "next";
-// import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from 'react-hot-toast'
-
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
-
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["latin"],
-// });
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
-  title: "Legal Connect",
-  description: "Legal Connect is a platform for connecting legal professionals with clients.",
+  title: "LegalConnect",
+  description: "Find attorneys and legal services with LegalConnect",
 };
 
 export default function RootLayout({
@@ -25,10 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-       {/* <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} /> */}
-      <body
-        // className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased" suppressHydrationWarning>
         {children}
         <Toaster position="top-right" />
       </body>
