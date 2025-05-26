@@ -18,9 +18,9 @@ const Login: React.FC = () => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
-    const handleForgotPassword = () => {
-      alert("Forgot password clicked!");
-    };
+    // const handleForgotPassword = () => {
+    //   alert("Forgot password clicked!");
+    // };
 
 
       const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -185,7 +185,7 @@ const Login: React.FC = () => {
         {/* Password strength indicator */}
         
       </div>
-      <div className="flex items-center justify-between w-full">
+      {/* <div className="flex items-center justify-between w-full">
         
         <button
           type="button"
@@ -194,7 +194,7 @@ const Login: React.FC = () => {
         >
           Forgot password?
         </button>
-      </div>
+      </div> */}
     </div>
 
     <button
