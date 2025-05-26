@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import RequestConsultationModal from "../../components/requestConsultationModal"; // Import the modal component
-// import NavbarClient from "@/components/navbar"; // Uncomment if you need your navbar
-// import { Navbar } from "@/components/navbar copy"; // Uncomment if you need your navbar
+import Header from "../../components/Header"; // Import the Header component
 import { Search, MapPin, Clock, Star, CheckCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -140,12 +139,11 @@ export default function FindAttorney() {
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
-      {/* Header (e.g., your Navbar component would go here if uncommented) */}
-      {/* <NavbarClient /> */}
-      {/* <Navbar /> */}
-
+      {/* Header (your Navbar component would go here) */}
+      <Header /> {/* Render the Header component */}
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      {/* Added pt-16 to offset the fixed header */}
+      <main className="max-w-7xl mx-auto px-4 py-8 pt-16">
         <h1 className="text-2xl font-bold mb-6">Find an Attorney</h1>
 
         {/* Search Bar Section */}
@@ -484,7 +482,6 @@ export default function FindAttorney() {
           </div>
         )}
       </main>
-
       {/* The RequestConsultationModal component, rendered conditionally */}
       <RequestConsultationModal
         attorney={selectedAttorney} // Pass the selected attorney data

@@ -50,7 +50,8 @@ export default function Header() {
   ];
 
   return (
-    <header className="bg-[#1e2e45] text-white py-4 px-6">
+    // Added 'fixed', 'top-0', 'left-0', 'right-0', and 'z-50' classes
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#1e2e45] text-white py-4 px-6">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Image
