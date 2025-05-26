@@ -24,7 +24,7 @@ export default function PersonalInfo() {
     const loadProfile = async () => {
       try {
         const userId = localStorage.getItem("userId");
-        const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("access_token");
         
         if (!userId || !token) {
           throw new Error("No user ID or token found");
@@ -85,7 +85,7 @@ export default function PersonalInfo() {
       setUpdateError(null);
 
       const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("access_token");
       
       if (!userId || !token) {
         throw new Error("No user ID or token found");
