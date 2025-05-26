@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import "./globals.css";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -14,6 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      {/* <Script
+        src="https://assets.calendly.com/assets/external/widget.js"
+        strategy="afterInteractive"
+      /> */}
       <body className="antialiased">{children}</body>
     </html>
   );

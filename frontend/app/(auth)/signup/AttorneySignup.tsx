@@ -103,11 +103,16 @@ export default function SignupPage() {
       setIsSubmitting(false);
     }
   };
-
+function PasswordStrength({ password }: { password: string }) {
+  let strength = "";
+  if (!password) strength = "";
+  else if (password.length < 6) strength = "Weak";
+  else if (password.match(/[A-Z]/) && password.match(/[0-9]/) && password.length >= 8) strength = "Strong";
+  else strength = "Medium";
+}
   return (
-    <div className='flex flex-col items-center justify-center w-full h-full bg-white rounded-l-full'>
+    <div className='flex flex-col items-center justify-center w-full h-full '>
       <form onSubmit={handleSubmit} className="w-full flex flex-col items-center">
-        <h1 className='text-4xl font-bold text-blue-950 mb-10'>Attorney Signup</h1>
 
         {/* Form Inputs - Two Columns */}
         <div className='flex flex-row justify-center w-3/5 gap-5 mb-5'>
@@ -174,7 +179,7 @@ export default function SignupPage() {
             />
           </div>
         </div>
-
+        
         {/* License Document Upload */}
         <div className='w-3/5 mb-5'>
           <label className='block text-sm text-blue-950 mb-2'>Upload License Document</label>

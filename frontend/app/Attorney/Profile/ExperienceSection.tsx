@@ -12,7 +12,7 @@ interface ExperienceSectionProps {
   attorneyid: string;
 }
 
-export default function ExperienceSection({ experienceData, setExperienceData, attorneyid }: ExperienceSectionProps) {
+export default function ExperienceSection({ experienceData, setExperienceData, attorneyid}: ExperienceSectionProps) {
   const [open, setOpen] = useState(false);
   const [tempExperienceEntry, setTempExperienceEntry] = useState<Omit<Experience, 'id'>>({ organization: "", title: "", years: "" });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -62,7 +62,7 @@ export default function ExperienceSection({ experienceData, setExperienceData, a
     }
 
     try {
-      const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("access_token");
       if (!token) {
         throw new Error("No authentication token found");
       }
@@ -133,7 +133,7 @@ export default function ExperienceSection({ experienceData, setExperienceData, a
   const handleDeleteExperience = async () => {
     if (editingIndex !== null) {
       try {
-        const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("access_token");
         if (!token) {
           throw new Error("No authentication token found");
         }
