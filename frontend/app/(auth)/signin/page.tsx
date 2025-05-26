@@ -44,20 +44,20 @@ const Login: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Login API error response (NOT OK):", errorData); // Log detailed error if not OK
+        console.error("Login API error response (NOT OK):", errorData);
         throw new Error(errorData.message || "Login failed");
       }
 
       const data = await response.json();
-      console.log("1. Login successful, received raw data:", data); // THIS IS CRUCIAL
-      console.log("2. Checking data.access_token:", data.data.access_token); // Make sure to access data.data.access_token based on your response structure
+      console.log("1. Login successful, received raw data:", data);
 
       // --- CRITICAL FIX AND LOGGING ---
-      // Your backend response has data: { user: {}, access_token: "..." }
-      // So you need to access data.data.access_token
-      if (data.data && data.data.access_token) {
-        console.log("3. Condition 'if (data.data.access_token)' is TRUE.");
-        localStorage.setItem("access_token", data.data.access_token);
+      // Your backend response structure: { data: { user: { ... }, access_token: "..." } }
+      const { user, access_token } = data.data; // Destructure user and access_token
+
+      if (access_token) {
+        console.log("3. Condition 'if (access_token)' is TRUE.");
+        localStorage.setItem("access_token", access_token);
         console.log("4. Attempted to set access_token in localStorage.");
         const storedTokenCheck = localStorage.getItem("access_token");
         console.log(
@@ -66,25 +66,37 @@ const Login: React.FC = () => {
             ? "SET_SUCCESS (length: " + storedTokenCheck.length + ")"
             : "SET_FAILURE (token is null/empty)"
         );
+
+        // --- NEW: Store user details from the login response ---
+        if (user) {
+          localStorage.setItem("user_first_name", user.first_name || '');
+          localStorage.setItem("user_last_name", user.last_name || '');
+          // 'image' field can be null, so ensure to store a string or handle null
+          localStorage.setItem("user_image", user.image || ''); // Store as empty string if null
+          console.log("6. Stored user_first_name, user_last_name, user_image in localStorage.");
+        } else {
+          console.warn("User data not found in login response.");
+        }
+        // --- END NEW ---
+
       } else {
         console.warn(
-          "3. Condition 'if (data.data.access_token)' is FALSE. No access_token found or it was null/empty."
+          "3. Condition 'if (access_token)' is FALSE. No access_token found or it was null/empty."
         );
-        // If this path is taken, it means the token was not found even though the API response was 200
         setError(
           "Login successful, but no access token was provided by the server."
         );
       }
       // --- END CRITICAL FIX AND LOGGING ---
 
-      console.log("6. Redirecting to /Client...");
+      console.log("7. Redirecting to /Client..."); // Changed from 6 to 7 due to added steps
       router.push("/Client");
     } catch (error) {
-      console.error("7. Login error caught in catch block:", error);
+      console.error("8. Login error caught in catch block:", error); // Changed from 7 to 8
       setError(error instanceof Error ? error.message : "Login failed");
     } finally {
       setIsSubmitting(false);
-      console.log("8. Login process finished.");
+      console.log("9. Login process finished."); // Changed from 8 to 9
     }
   };
 
@@ -100,6 +112,7 @@ const Login: React.FC = () => {
         <button
           className="px-7 py-1 rounded-4xl text-blue-950 bg-white hover:bg-gray-100 transition-colors"
           type="button"
+          onClick={() => router.push("/signup")}
         >
           Sign Up
         </button>
