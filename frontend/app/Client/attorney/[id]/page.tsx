@@ -214,33 +214,7 @@ export default function AttorneyProfile({
               </div>
 
               <div className="bg-white border border-[#e4e4e7] rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Availability</h3>
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm">Available for new clients</span>
-                    <div className="relative inline-block w-10 h-6 transition duration-200 ease-in-out">
-                      <input
-                        type="checkbox"
-                        id="new-clients"
-                        checked={attorney.attorney.is_available}
-                        readOnly
-                        className="opacity-0 w-0 h-0"
-                      />
-                      <label
-                        htmlFor="new-clients"
-                        className="block overflow-hidden h-6 rounded-full bg-gray-300 cursor-default"
-                      >
-                        <span
-                          className={`block h-6 w-6 rounded-full bg-white transform ${
-                            attorney.attorney.is_available
-                              ? "translate-x-4"
-                              : "translate-x-0"
-                          } transition-transform duration-200 ease-in-out`}
-                        ></span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
+                
                 <div>
                   <h4 className="text-sm font-medium mb-2">Working Hours</h4>
                   <div className="space-y-1 text-sm">
@@ -260,59 +234,7 @@ export default function AttorneyProfile({
                 </div>
               </div>
 
-              <div className="bg-white border border-[#e4e4e7] rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Pro Bono Work</h3>
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm">Available for Pro Bono</span>
-                    <div className="relative inline-block w-10 h-6 transition duration-200 ease-in-out">
-                      <input
-                        type="checkbox"
-                        id="pro-bono"
-                        checked={attorney.attorney.offers_probono}
-                        readOnly
-                        className="opacity-0 w-0 h-0"
-                      />
-                      <label
-                        htmlFor="pro-bono"
-                        className="block overflow-hidden h-6 rounded-full bg-gray-300 cursor-default"
-                      >
-                        <span
-                          className={`block h-6 w-6 rounded-full bg-white transform ${
-                            attorney.attorney.offers_probono
-                              ? "translate-x-4"
-                              : "translate-x-0"
-                          } transition-transform duration-200 ease-in-out`}
-                        ></span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium mb-2">Pro Bono Hours</h4>
-                  <div className="flex items-center">
-                    <span className="text-sm text-[#71717a]">This Year</span>
-                    <span className="ml-2 bg-[#1e2e45] text-white text-xs px-2 py-1 rounded-full">
-                      Not specified
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium mb-2">
-                    Areas of Interest
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {attorney.attorney.expertise.map((exp) => (
-                      <span
-                        key={exp}
-                        className="bg-[#f8fafc] text-xs px-3 py-1 rounded-full"
-                      >
-                        {exp}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              
             </div>
 
             <div className="w-full md:w-3/4">

@@ -24,8 +24,8 @@ const Navbar = () => {
           <Link href="/(Landing)/ContactUs" className={isActive('/(Landing)/ContactUs')}>Contact Us</Link>
         </div>
         <div className="flex items-center gap-4 ml-8">
-          <Link href="/(auth)/Signin" className="bg-transparent border border-[#CBB26A] text-sm px-4 py-1 text-[#CBB26A] hover:text-gray-300 font-medium">Login</Link>
-          <Link href="/(auth)/Signup" className="bg-[#CBB26A] text-white text-sm px-4 py-1 rounded font-medium hover:bg-[#bfa14e] transition">Register</Link>
+          <Link href="/signin" className="bg-transparent border border-[#CBB26A] text-sm px-4 py-1 text-[#CBB26A] hover:text-gray-300 font-medium">Login</Link>
+          <Link href="/signup" className="bg-[#CBB26A] text-white text-sm px-4 py-1 rounded font-medium hover:bg-[#bfa14e] transition">Register</Link>
         </div>
       </div>
     </nav>
