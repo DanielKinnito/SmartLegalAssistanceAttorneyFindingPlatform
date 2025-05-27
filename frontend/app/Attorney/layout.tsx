@@ -46,7 +46,7 @@ export default function AttorneyLayout({ children }: { children: React.ReactNode
   const [updating, setUpdating] = useState(false);
 
   const navItems = [
-    { text: 'Law Search', icon: <Search className="w-5 h-5" />, path: '/common/law-search' },
+    { text: 'Law Search', icon: <Search className="w-5 h-5" />, path: '/Attorney/law-search' },
     { text: 'AI Bot', icon: <ChatBubbleOutline className="w-5 h-5" />, path: '/Attorney/ai-bot' },
     { text: 'Legal Requests', path: '/Attorney/legalRequest' },
   ];

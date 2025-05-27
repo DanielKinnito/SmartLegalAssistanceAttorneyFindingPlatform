@@ -10,7 +10,6 @@ interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
-  phone: string;
   document?: File | null;
   role?: string;
 }
@@ -29,7 +28,6 @@ export default function SignupPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    phone: "",
     document: null,
     role: "attorney",
   });
@@ -79,7 +77,6 @@ export default function SignupPage() {
     data.append("email", formData.email);
     data.append("password", formData.password);
     data.append("confirm_password", formData.confirmPassword);
-    data.append("phone", formData.phone);
     data.append("role", "attorney");
     
     if (!formData.document) {
@@ -159,14 +156,7 @@ function PasswordStrength({ password }: { password: string }) {
               onChange={handleChange}
               required
             />
-            <input
-              className='w-full px-5 py-1.5 text-sm rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500'
-              type="tel"
-              placeholder='Phone Number'
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-            />
+            
             <input
               className='w-full px-5 py-1.5 text-sm rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500'
               type="password"
