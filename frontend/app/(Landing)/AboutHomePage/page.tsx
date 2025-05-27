@@ -78,12 +78,12 @@ export default function LegalPlatformLanding() {
                 Professional Lawyers And Advisors With More Experience
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link href="/find-attorney">
+                <Link href="/signup">
                   <Button size="lg" className="w-full sm:w-auto bg-white text-[#1e2e45] hover:bg-gray-100 font-medium px-8">
                     Find an Attorney
                   </Button>
                 </Link>
-                <Link href="/attorney-signup">
+                <Link href="/signup">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto text-white border-white hover:bg-white/10 font-medium px-8">
                     Join as Attorney
                   </Button>
@@ -410,7 +410,7 @@ export default function LegalPlatformLanding() {
                   </div>
                 </div>
               </div>
-              <Link href="/attorney-signup" passHref legacyBehavior>
+              <Link href="/signup" passHref legacyBehavior>
                 <Button size="lg" className="bg-white text-[#1e2e45] hover:bg-white/90 font-semibold text-lg px-8 py-6">
                   Join as Attorney
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -583,7 +583,7 @@ export default function LegalPlatformLanding() {
                   </div>
                 </div>
               </div>
-              <Link href="/find-attorney" passHref legacyBehavior>
+              <Link href="/signup" passHref legacyBehavior>
                 <Button size="lg" className="bg-[#1e2e45] text-white hover:bg-[#1e2e45]/90 font-semibold text-lg px-8 py-6">
                   Find Legal Help Now
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -734,7 +734,7 @@ export default function LegalPlatformLanding() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/attorney-signup" passHref legacyBehavior>
+              <Link href="/signup" passHref legacyBehavior>
                 <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 font-semibold text-lg px-8 py-6">
                   Join as Attorney
                   <ArrowRight className="ml-2 h-5 w-5" />
