@@ -161,7 +161,6 @@ const RequestCard: React.FC<RequestCardProps> = ({ request, caseData, onAccept, 
     </div>
   </div>
 </Collapse>
-
       {request.status === "pending" && (
         <div className="mt-4 flex gap-2" onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}>
           <Button

@@ -222,6 +222,9 @@ export const logout = (): void => {
   localStorage.removeItem("userRole");
   localStorage.removeItem("userId");
   localStorage.removeItem("refreshToken");
+  localStorage.removeItem("user_first_name");
+  localStorage.removeItem("user_image");
+  localStorage.removeItem("user_last_name");
   // router.push("/signin"); // Redirect to signin page after logout
   console.log("User logged out, localStorage cleared");
 };
