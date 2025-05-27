@@ -1,5 +1,4 @@
 import axios from "axios";
-
 // Base URL from environment variables or fallback
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
@@ -190,7 +189,7 @@ export const uploadLicense = async (licenseFile: File): Promise<void> => {
   const formData = new FormData();
   formData.append("file", licenseFile);
 
-  const token = localStorage.getItem("authToken");
+  const token = localStorage.getItem("access_token");
   if (!token) {
     throw new Error("No authentication token found");
   }
@@ -218,10 +217,15 @@ export const uploadLicense = async (licenseFile: File): Promise<void> => {
  * Logs out the user by clearing token, role, userId, and refreshToken from localStorage.
  */
 export const logout = (): void => {
-  localStorage.removeItem("authToken");
+  // const router = useRouter();
+  localStorage.removeItem("access_token");
   localStorage.removeItem("userRole");
   localStorage.removeItem("userId");
   localStorage.removeItem("refreshToken");
+  localStorage.removeItem("user_first_name");
+  localStorage.removeItem("user_image");
+  localStorage.removeItem("user_last_name");
+  // router.push("/signin"); // Redirect to signin page after logout
   console.log("User logged out, localStorage cleared");
 };
 
@@ -233,7 +237,7 @@ const api = axios.create({
 // Add a request interceptor to include the token in all requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("access_token");
     if (token) {
       config.headers = config.headers || {};
       config.headers["Authorization"] = `Bearer ${token}`;
@@ -251,7 +255,7 @@ const isEmptyObject = (obj: Record<string, any>) => {
 // Fetch education and experience data for an attorney
 export const fetchEducationAndExperience = async (attorneyid: string) => {
   try {
-    console.log(`Fetching data for attorneyid: ${attorneyid} from ${BASE_URL}api/attorney/educationandexperience/${attorneyid}`);
+    console.log(`Fetching data for attorneyid: ${attorneyid} from ${BASE_URL}/api/attorney/educationandexperience/${attorneyid}`);
     const response = await api.get(`api/attorney/educationandexperience/${attorneyid}`);
     return response.data;
   } catch (error) {
@@ -292,54 +296,31 @@ export const createEducationAndExperience = async (
 // Update existing education or experience entry
 export const updateEducationAndExperience = async (
   education_experienceid: string,
-  body: UpdateEducationExperienceBody,
-  token: string
+  body: UpdateEducationExperienceBody
 ): Promise<UpdateEducationExperienceResponse> => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
-  console.log(`Updating education/experience with ID: ${education_experienceid}`);
-  console.log('Update payload:', body);
-
-  const response = await fetch(`${baseUrl}/api/attorney/educationandexperience/${education_experienceid}`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Update education/experience response body:", errorText);
-    throw new Error(`Failed to update education/experience: ${response.status} - ${errorText}`);
+  try {
+    console.log(`Updating education/experience with ID: ${education_experienceid}`);
+    console.log('Update payload:', body);
+    const response = await api.patch(`/api/attorney/educationandexperience/${education_experienceid}`, body);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating education/experience:", error);
+    throw error;
   }
-
-  return response.json();
 };
 
 // Delete education or experience entry
 export const deleteEducationAndExperience = async (
-  education_experienceid: string,
-  token: string
+  education_experienceid: string
 ): Promise<DeleteEducationExperienceResponse> => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
-  console.log(`Deleting education/experience with ID: ${education_experienceid}`);
-
-  const response = await fetch(`${baseUrl}/api/attorney/educationandexperience/${education_experienceid}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Delete education/experience response body:", errorText);
-    throw new Error(`Failed to delete education/experience: ${response.status} - ${errorText}`);
+  try {
+    console.log(`Deleting education/experience with ID: ${education_experienceid}`);
+    const response = await api.delete(`/api/attorney/educationandexperience/${education_experienceid}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting education/experience:", error);
+    throw error;
   }
-
-  return response.json();
 };
 
 // Get education and experience data for a user by userID from localStorage

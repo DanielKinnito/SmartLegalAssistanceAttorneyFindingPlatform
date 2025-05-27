@@ -62,7 +62,7 @@ export default function EducationSection({ educationData, setEducationData, atto
     }
 
     try {
-      const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("access_token");
       if (!token) {
         throw new Error("No authentication token found");
       }
@@ -129,7 +129,7 @@ export default function EducationSection({ educationData, setEducationData, atto
   const handleDeleteEducation = async () => {
     if (editingIndex !== null) {
       try {
-        const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("access_token");
         if (!token) {
           throw new Error("No authentication token found");
         }

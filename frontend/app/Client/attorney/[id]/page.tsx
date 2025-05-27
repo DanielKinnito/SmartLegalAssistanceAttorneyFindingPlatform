@@ -170,7 +170,7 @@ export default function AttorneyProfile({
               <div className="bg-white border border-[#e4e4e7] rounded-lg p-6">
                 <div className="flex flex-col items-center">
                   {attorney.image ? (
-                    <Image
+                    <img
                       src={attorney.image}
                       alt={`${attorney.first_name} ${attorney.last_name}`}
                       width={128}

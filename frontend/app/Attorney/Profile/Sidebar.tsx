@@ -100,12 +100,29 @@ export default function Sidebar({ onLogout }: SidebarProps) {
     image: null,
     expertise: [],
   });
+  const [userId, setUserId] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
-  const loadProfile = async () => {
+  useEffect(() => {
+    // Fetch userId and access_token from localStorage once when component mounts
     try {
-      const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("authToken");
-      if (!userId || !token) throw new Error("No user ID or token found");
+      const storedUserId = localStorage.getItem("userId");
+      const storedToken = localStorage.getItem("access_token");
+      if (!storedUserId || !storedToken) {
+        throw new Error("No user ID or token found");
+      }
+      setUserId(storedUserId);
+      setAccessToken(storedToken);
+      loadProfile(storedUserId, storedToken);
+    } catch (error) {
+      console.error("Error: No token or user ID found", error);
+      setError(error instanceof Error ? error.message : 'Failed to find token or user ID');
+      setLoading(false);
+    }
+  }, []);
+
+  const loadProfile = async (userId: string, token: string) => {
+    try {
       const response = await fetchAttorneyProfile(userId, token);
       if (response.attorney_data) {
         const userData = response.attorney_data.user;
@@ -127,21 +144,17 @@ export default function Sidebar({ onLogout }: SidebarProps) {
     }
   };
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !userId || !accessToken) {
+      setError("No file selected or missing user ID/token");
+      return;
+    }
     try {
       setUpdating(true);
       setError(null);
-      const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("authToken");
-      if (!userId || !token) throw new Error("No user ID or token found");
-      await uploadProfileImage(userId, token, file);
-      const updatedProfile = await fetchAttorneyProfile(userId, token);
+      await uploadProfileImage(userId, accessToken, file);
+      const updatedProfile = await fetchAttorneyProfile(userId, accessToken);
       if (updatedProfile.attorney_data) {
         setProfileData(prev => ({
           ...prev,
@@ -157,15 +170,16 @@ export default function Sidebar({ onLogout }: SidebarProps) {
   };
 
   const handleAvailabilityChange = async () => {
+    if (!userId || !accessToken) {
+      setError("Missing user ID or token");
+      return;
+    }
     try {
       setUpdating(true);
       setError(null);
-      const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("authToken");
-      if (!userId || !token) throw new Error("No user ID or token found");
       const newAvailable = !available;
-      await updateAttorneyProfile(userId, token, { is_available: newAvailable });
-      const updatedProfile = await fetchAttorneyProfile(userId, token);
+      await updateAttorneyProfile(userId, accessToken, { is_available: newAvailable });
+      const updatedProfile = await fetchAttorneyProfile(userId, accessToken);
       if (updatedProfile.attorney_data) {
         setAvailable(updatedProfile.attorney_data.is_available);
       }
@@ -178,15 +192,16 @@ export default function Sidebar({ onLogout }: SidebarProps) {
   };
 
   const handleProBonoChange = async () => {
+    if (!userId || !accessToken) {
+      setError("Missing user ID or token");
+      return;
+    }
     try {
       setUpdating(true);
       setError(null);
-      const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("authToken");
-      if (!userId || !token) throw new Error("No user ID or token found");
       const newProBono = !proBono;
-      await updateAttorneyProfile(userId, token, { offers_probono: newProBono });
-      const updatedProfile = await fetchAttorneyProfile(userId, token);
+      await updateAttorneyProfile(userId, accessToken, { offers_probono: newProBono });
+      const updatedProfile = await fetchAttorneyProfile(userId, accessToken);
       if (updatedProfile.attorney_data) {
         setProBono(updatedProfile.attorney_data.offers_probono);
       }
@@ -213,16 +228,18 @@ export default function Sidebar({ onLogout }: SidebarProps) {
 
   const handleAddExpertise = async (value?: string) => {
     const expertiseToAdd = value || selectedExpertise;
-    if (!expertiseToAdd || profileData.expertise.includes(expertiseToAdd)) return;
+    if (!expertiseToAdd || profileData.expertise.includes(expertiseToAdd) || !userId || !accessToken) {
+      if (!userId || !accessToken) {
+        setError("Missing user ID or token");
+      }
+      return;
+    }
     try {
       setUpdating(true);
       setError(null);
-      const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("authToken");
-      if (!userId || !token) throw new Error("No user ID or token found");
       const newExpertise = [...profileData.expertise, expertiseToAdd];
-      await updateAttorneyProfile(userId, token, { expertise: newExpertise });
-      const updatedProfile = await fetchAttorneyProfile(userId, token);
+      await updateAttorneyProfile(userId, accessToken, { expertise: newExpertise });
+      const updatedProfile = await fetchAttorneyProfile(userId, accessToken);
       if (updatedProfile.attorney_data) {
         setProfileData(prev => ({
           ...prev,
@@ -239,15 +256,16 @@ export default function Sidebar({ onLogout }: SidebarProps) {
   };
 
   const handleRemoveExpertise = async (expertiseToRemove: string) => {
+    if (!userId || !accessToken) {
+      setError("Missing user ID or token");
+      return;
+    }
     try {
       setUpdating(true);
       setError(null);
-      const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("authToken");
-      if (!userId || !token) throw new Error("No user ID or token found");
       const newExpertise = profileData.expertise.filter(e => e !== expertiseToRemove);
-      await updateAttorneyProfile(userId, token, { expertise: newExpertise });
-      const updatedProfile = await fetchAttorneyProfile(userId, token);
+      await updateAttorneyProfile(userId, accessToken, { expertise: newExpertise });
+      const updatedProfile = await fetchAttorneyProfile(userId, accessToken);
       if (updatedProfile.attorney_data) {
         setProfileData(prev => ({
           ...prev,
@@ -270,32 +288,31 @@ export default function Sidebar({ onLogout }: SidebarProps) {
     <div className="bg-white rounded-2xl shadow p-6 flex flex-col gap-8 min-w-[280px]">
       {/* Profile Image */}
       <div className="flex flex-col items-center gap-2 relative">
-      <div className="w-28 h-28 rounded-full border-4 border-white shadow-lg overflow-hidden mb-2 relative">
-        <img
-          src={profileData.image || "https://i.pinimg.com/736x/cd/4b/d9/cd4bd9b0ea2807611ba3a67c331bff0b.jpg"}
-          alt="profilepic"
-          className="w-full h-full object-cover"
-        />
-        <label
-          htmlFor="profile-image-upload"
-          className="absolute inset-0 w-full h-full flex items-center justify-center bg-black bg-opacity-40 rounded-full opacity-0 hover:opacity-100 cursor-pointer transition-opacity duration-300"
-        >
-          <CameraAlt className="text-white text-2xl" />
-        </label>
-        <input
-          id="profile-image-upload"
-          type="file"
-          accept="image/*"
-          onChange={handleImageChange}
-          className="hidden"
-          disabled={updating}
-        />
-        {updating && (
-          <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black bg-opacity-60 rounded-full">
-            <CircularProgress size={24} sx={{ color: 'white' }} />
-          </div>
-        )}
-      </div>
+        <div className="w-28 h-28 rounded-full border-4 border-white shadow-lg overflow-hidden mb-2 relative">
+          <img
+            src={profileData.image || "https://i.pinimg.com/736x/cd/4b/d9/cd4bd9b0ea2807611ba3a67c331bff0b.jpg"}
+            alt="profilepic"
+            className="w-full h-full object-cover"
+          />
+          <label
+            htmlFor="profile-image-upload"
+            className="absolute inset-0 w-full h-full flex items-center justify-center bg-black bg-opacity-40 rounded-full opacity-0 hover:opacity-100 cursor-pointer transition-opacity duration-300"
+          >
+            <CameraAlt className="text-white text-2xl" />
+          </label>
+          <input
+            id="profile-image-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="hidden"
+            disabled={updating}
+          />
+          {updating && (
+            <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black bg-opacity-60 rounded-full">
+              <CircularProgress size={24} sx={{ color: 'white' }} />
+            </div>
+          )}
         </div>
         <h2 className="text-xl font-semibold text-[#1E2E45]">{profileData.name}</h2>
         <p className="text-base text-[#374151]">Corporate Law Specialist</p>
@@ -311,11 +328,8 @@ export default function Sidebar({ onLogout }: SidebarProps) {
             <span className="text-yellow-600 font-medium">Pending Approval</span>
           )}
         </div>
-   
+      </div>
 
-
-
-     
       <div>
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-[#1E2E45]">Areas of Expertise</h3>
@@ -385,8 +399,6 @@ export default function Sidebar({ onLogout }: SidebarProps) {
           </div>
         )}
       </div>
-
-
 
       {/* Availability Toggle */}
       <div>

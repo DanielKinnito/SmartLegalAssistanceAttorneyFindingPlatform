@@ -43,7 +43,7 @@ export default function AttorneyProfile() {
   const [error, setError] = useState<string | null>(null);
 
   // Retrieve token, role, and userId from localStorage
-  const token = localStorage.getItem("authToken");
+  const token = localStorage.getItem("access_token");
   const userRole = localStorage.getItem("userRole");
   const userId = localStorage.getItem("userId");
 
@@ -53,7 +53,7 @@ export default function AttorneyProfile() {
   useEffect(() => {
     // Check authentication
     if (!token || userRole !== "attorney") {
-      router.push("/login");
+      router.push("/signin");
       return;
     }
 
@@ -99,8 +99,10 @@ export default function AttorneyProfile() {
   }, [attorneyid, token, userRole, router]);
 
   const handleLogout = () => {
+
+    console.log("Logging out...");
     logout();
-    router.push("/login");
+    router.push("/signin");
   };
 
   if (loading) {

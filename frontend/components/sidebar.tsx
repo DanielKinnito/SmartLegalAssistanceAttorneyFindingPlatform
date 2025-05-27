@@ -3,6 +3,8 @@
 import { BarChart3, FileText, Home, LogOut, MessageSquare, Settings, Users, ClipboardCheck, Brain } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utlis"
+import logo from '../public/assets/logo.png'
+
 interface SidebarProps {
   activeTab: string
   setActiveTab: (tab: string) => void
@@ -30,11 +32,11 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         },
       ],
     },
-    {
-      id: "request-management",
-      label: "Request Management",
-      icon: ClipboardCheck,
-    },
+    // {
+    //   id: "request-management",
+    //   label: "Request Management",
+    //   icon: ClipboardCheck,
+    // },
     {
       id: "analytics",
       label: "Analytics",
@@ -46,11 +48,11 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       icon: FileText,
     },
    
-    {
-      id: "knowledge-base",
-      label: "AI Knowledge Base",
-      icon: Brain,
-    },
+    // {
+    //   id: "knowledge-base",
+    //   label: "AI Knowledge Base",
+    //   icon: Brain,
+    // },
     {
       id: "settings",
       label: "Settings",
@@ -62,7 +64,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     <div className="w-64 h-full bg-[#29374A] text-white flex flex-col">
       <div className="p-4 border-b border-gray-700 flex items-center">
         <div className="mr-2">
-          <Image src="/placeholder.svg?height=32&width=32" alt="Logo" width={32} height={32} className="rounded-md" />
+          <Image src={logo} alt="Logo" width={32} height={32} className="rounded-md" />
         </div>
         <h1 className="text-xl font-semibold">LegalConnect</h1>
       </div>

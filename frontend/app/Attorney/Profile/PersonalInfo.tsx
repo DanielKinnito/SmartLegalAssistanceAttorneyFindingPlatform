@@ -24,7 +24,7 @@ export default function PersonalInfo() {
     const loadProfile = async () => {
       try {
         const userId = localStorage.getItem("userId");
-        const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem("access_token");
         
         if (!userId || !token) {
           throw new Error("No user ID or token found");
@@ -85,7 +85,7 @@ export default function PersonalInfo() {
       setUpdateError(null);
 
       const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("access_token");
       
       if (!userId || !token) {
         throw new Error("No user ID or token found");
@@ -200,13 +200,13 @@ export default function PersonalInfo() {
               <p className="text-gray-800">{personalInfo.email || "Not provided"}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <Phone className="text-gray-500" />
             <div>
               <p className="text-sm text-gray-600">Phone</p>
               <p className="text-gray-800">{personalInfo.phone || "Not provided"}</p>
             </div>
-          </div>
+          </div> */}
           <div className="flex items-center gap-2">
             <LocationOn className="text-gray-500" />
             <div>
@@ -214,10 +214,6 @@ export default function PersonalInfo() {
               <p className="text-gray-800">{personalInfo.location || "Not provided"}</p>
             </div>
           </div>
-        </div>
-        <div className="mt-4">
-          <p className="text-sm text-gray-600">Biography</p>
-          <p className="text-gray-800">{personalInfo.biography || "No biography provided"}</p>
         </div>
       </div>
       <Dialog open={open} onClose={handleModalClose}>
@@ -246,14 +242,6 @@ export default function PersonalInfo() {
               InputProps={{ startAdornment: <Email /> }}
             />
             <TextField
-              label="Phone"
-              fullWidth
-              value={tempPersonalInfo.phone}
-              onChange={handleChange}
-              name="phone"
-              InputProps={{ startAdornment: <Phone /> }}
-            />
-            <TextField
               label="Location"
               fullWidth
               value={tempPersonalInfo.location}
@@ -262,16 +250,6 @@ export default function PersonalInfo() {
               InputProps={{ startAdornment: <LocationOn /> }}
             />
           </div>
-          <TextField
-            label="Biography"
-            fullWidth
-            multiline
-            value={tempPersonalInfo.biography}
-            onChange={handleChange}
-            name="biography"
-            rows={4}
-            className="mt-4"
-          />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleModalClose} color="secondary" disabled={updating}>

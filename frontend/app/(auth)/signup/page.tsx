@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"; // Import useRouter for client-side navigation
 import React, { useState } from "react";
 import ClientForm from "./ClientSignup";
-import AttorneyForm from "./AttorneySignup";
+import AttorneySignup from "./AttorneySignup";
 
 export default function SignupPage() {
   const router = useRouter(); // Initialize the router hook
@@ -23,9 +23,9 @@ export default function SignupPage() {
           Facilitates connections between the community and affordable attorneys
         </p>
         <button
-          className="px-7 py-1 rounded-4xl text-blue-950 bg-white hover:bg-gray-100 transition-colors"
+          className="px-7 py-1 rounded-4xl text-blue-950 bg-white hover:bg-gray-100 transition-colors cursor-pointer"
           type="button"
-          onClick={() => router.push("/login")}
+          onClick={() => router.push("/signin")}
         >
           Login
         </button>
@@ -65,7 +65,7 @@ export default function SignupPage() {
           {userType === "client" ? (
             <ClientForm router={router} />
           ) : (
-            <AttorneyForm router={router} />
+            <AttorneySignup router={router} />
           )}
         </div>
       </div>

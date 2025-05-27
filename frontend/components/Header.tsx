@@ -72,7 +72,7 @@ export default function Header() {
   const navLinks = [
     { href: "/common/law-search", label: "Law Search" },
     { href: "/Client", label: "Find Attorney" },
-    { href: "/common/ai-bot", label: "AI Bot" },
+    { href: "/common/AI-ChatBot", label: "AI Bot" },
     { href: "/Client/legal-requests", label: "Legal Requests" },
   ];
 
@@ -86,6 +86,7 @@ export default function Header() {
             width={24}
             height={24}
             className="mr-1"
+            style={{ objectFit: 'contain' }}
           />
           <span className="font-semibold text-lg">LegalConnect</span>
         </div>
