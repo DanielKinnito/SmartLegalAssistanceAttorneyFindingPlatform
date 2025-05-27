@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import RequestConsultationModal from "../../components/requestConsultationModal"; // Import the modal component
-import Header from "../../components/Header"; // Import the Header component
+import React, { useState, useEffect, ChangeEvent, MouseEvent } from "react";
+import RequestConsultationModal from "../../components/requestConsultationModal";
+import Header from "../../components/Header";
 import { Search, MapPin, Clock, Star, CheckCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button"; // Assuming shadcn/ui button
-import { Skeleton } from "@/components/ui/skeleton"; // For loading state placeholders
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Attorney {
   id: string;
@@ -35,19 +35,27 @@ interface Attorney {
 
 export default function FindAttorney() {
   const [attorneys, setAttorneys] = useState<Attorney[]>([]);
+  const [filteredAttorneys, setFilteredAttorneys] = useState<Attorney[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsLogin, setNeedsLogin] = useState(false);
   const [selectedAttorney, setSelectedAttorney] = useState<Attorney | null>(
     null
-  ); // State to store the attorney for consultation
-  const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
-  const [authToken, setAuthToken] = useState<string | null>(null); // State to hold the access token
+  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState({
+    practiceAreas: [] as string[],
+    locations: [] as string[],
+    experience: [] as string[],
+    proBonoOnly: false,
+  });
 
   const router = useRouter();
 
   // Effect to fetch and set authentication token from localStorage
-  // This runs once on component mount to get the initial token status.
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     setAuthToken(token);
@@ -59,13 +67,12 @@ export default function FindAttorney() {
     setError(null);
 
     const token = localStorage.getItem("access_token");
-    // Ensure authToken state is updated here too, in case it was set after initial useEffect
     setAuthToken(token);
 
     if (!token) {
-      setNeedsLogin(true); // Indicate that login is required
+      setNeedsLogin(true);
       setIsLoading(false);
-      return; // Stop execution if no token
+      return;
     }
 
     try {
@@ -75,7 +82,7 @@ export default function FindAttorney() {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // Use the token for authorization
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -83,247 +90,351 @@ export default function FindAttorney() {
       if (!response.ok) {
         const errorText = await response.text().catch(() => "No response body");
         if (response.status === 401) {
-          // Handle 401 Unauthorized: token expired or invalid
-          localStorage.removeItem("access_token"); // Clear invalid token
-          setNeedsLogin(true); // Set state to show login prompt
-          setError("Session expired. Please log in again."); // Set specific error message
-          // Redirect to login page after a short delay for user to read message
+          localStorage.removeItem("access_token");
+          setNeedsLogin(true);
+          setError("Session expired. Please sign in again.");
           setTimeout(() => {
-            router.push("/login?redirect=/find-attorney");
+            router.push("/signin?redirect=/find-attorney");
           }, 2000);
-          return; // Stop execution
+          return;
         }
-        // For other HTTP errors, throw a generic error
         throw new Error(
           `HTTP ${response.status}: ${response.statusText}. ${errorText}`
         );
       }
 
       const data: Attorney[] = await response.json();
-      setAttorneys(data); // Update attorneys state with fetched data
+      setAttorneys(data);
+      setFilteredAttorneys(data);
     } catch (err) {
-      // Catch any network or parsing errors
       const errorMessage =
         err instanceof Error
           ? err.message
           : "An error occurred while fetching attorneys";
-      setError(errorMessage); // Set error message
+      setError(errorMessage);
       console.error("Fetch error:", err);
     } finally {
-      setIsLoading(false); // Always set loading to false after fetch attempt
+      setIsLoading(false);
     }
   };
 
-  // Fetch attorneys on initial component mount
   useEffect(() => {
     fetchAttorneys();
-  }, []); // Empty dependency array ensures this runs only once
+  }, []);
 
-  // Handler to open the consultation modal when "Request Consultation" button is clicked
-  const handleRequestConsultation = (attorney: Attorney) => {
-    if (!authToken) {
-      // If no authentication token is present, alert user and redirect to login
-      alert("You need to log in to request a consultation.");
-      router.push("/login?redirect=/find-attorney");
-      return;
+  // Function to handle search and filtering
+  const applyFilters = () => {
+    if (!attorneys.length) return;
+
+    let filtered = [...attorneys];
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (attorney) =>
+          attorney.user.first_name.toLowerCase().includes(query) ||
+          attorney.user.last_name.toLowerCase().includes(query) ||
+          attorney.expertise.some((exp) => exp.toLowerCase().includes(query))
+      );
     }
-    setSelectedAttorney(attorney); // Set the attorney object to be passed to the modal
-    setIsModalOpen(true); // Open the modal
+
+    if (filters.practiceAreas.length > 0) {
+      filtered = filtered.filter((attorney) =>
+        attorney.expertise.some((exp) => filters.practiceAreas.includes(exp))
+      );
+    }
+
+    if (filters.locations.length > 0) {
+      filtered = filtered.filter((attorney) =>
+        filters.locations.includes(attorney.address)
+      );
+    }
+
+    if (filters.experience.length > 0) {
+      filtered = filtered.filter((attorney) => {
+        const yearsExp = attorney.user.created_at
+          ? new Date().getFullYear() -
+            new Date(attorney.user.created_at).getFullYear()
+          : 0;
+        return filters.experience.some((range) => {
+          switch (range) {
+            case "0-2":
+              return yearsExp >= 0 && yearsExp <= 2;
+            case "2-5":
+              return yearsExp > 2 && yearsExp <= 5;
+            case "5-10":
+              return yearsExp > 5 && yearsExp <= 10;
+            case "10+":
+              return yearsExp > 10;
+            default:
+              return false;
+          }
+        });
+      });
+    }
+
+    if (filters.proBonoOnly) {
+      filtered = filtered.filter((attorney) => attorney.offers_probono);
+    }
+
+    setFilteredAttorneys(filtered);
   };
 
-  // Handler to close the consultation modal
+  useEffect(() => {
+    applyFilters();
+  }, [attorneys, searchQuery, filters]);
+
+  const handleFilterChange = (filterType: string, value: any) => {
+    setFilters((prev) => ({
+      ...prev,
+      [filterType]: value,
+    }));
+  };
+
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handlePracticeAreaChange = (area: string, checked: boolean) => {
+    setFilters((prev) => ({
+      ...prev,
+      practiceAreas: checked
+        ? [...prev.practiceAreas, area]
+        : prev.practiceAreas.filter((a) => a !== area),
+    }));
+  };
+
+  const handleLocationChange = (location: string, checked: boolean) => {
+    setFilters((prev) => ({
+      ...prev,
+      locations: checked
+        ? [...prev.locations, location]
+        : prev.locations.filter((l) => l !== location),
+    }));
+  };
+
+  const handleExperienceChange = (range: string, checked: boolean) => {
+    setFilters((prev) => ({
+      ...prev,
+      experience: checked
+        ? [...prev.experience, range]
+        : prev.experience.filter((r) => r !== range),
+    }));
+  };
+
+  const handleProBonoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    handleFilterChange("proBonoOnly", e.target.checked);
+  };
+
+  const handleSortChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const attorneys = [...filteredAttorneys];
+    switch (e.target.value) {
+      case "rating":
+        attorneys.sort((a, b) => b.rating - a.rating);
+        break;
+      case "experience":
+        attorneys.sort((a, b) => {
+          const aExp = a.user.created_at
+            ? new Date().getFullYear() -
+              new Date(a.user.created_at).getFullYear()
+            : 0;
+          const bExp = b.user.created_at
+            ? new Date().getFullYear() -
+              new Date(b.user.created_at).getFullYear()
+            : 0;
+          return bExp - aExp;
+        });
+        break;
+      default:
+        break;
+    }
+    setFilteredAttorneys(attorneys);
+  };
+
+  const handleApplyFilters = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    applyFilters();
+  };
+
+  const handleResetFilters = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    resetFilters();
+  };
+
+  const resetFilters = () => {
+    setSearchQuery("");
+    setFilters({
+      practiceAreas: [],
+      locations: [],
+      experience: [],
+      proBonoOnly: false,
+    });
+    setFilteredAttorneys(attorneys);
+  };
+
+  const handleRequestConsultation = (attorney: Attorney) => {
+    if (!authToken) {
+      alert("You need to sign in to request a consultation.");
+      router.push("/signin?redirect=/find-attorney");
+      return;
+    }
+    setSelectedAttorney(attorney);
+    setIsModalOpen(true);
+  };
+
   const handleCloseModal = () => {
-    setIsModalOpen(false); // Close the modal
-    setSelectedAttorney(null); // Clear the selected attorney when modal closes
+    setIsModalOpen(false);
+    setSelectedAttorney(null);
   };
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
-      {/* Header (your Navbar component would go here) */}
-      <Header /> {/* Render the Header component */}
-      {/* Main Content Area */}
-      {/* Added pt-16 to offset the fixed header */}
+      {/* Header with logout handler */}
+      <Header />
+
       <main className="max-w-7xl mx-auto px-4 py-8 pt-16">
         <h1 className="text-2xl font-bold mb-6">Find an Attorney</h1>
 
-        {/* Search Bar Section */}
         <div className="flex mb-6">
           <div className="relative flex-grow">
             <input
               type="text"
               placeholder="Search Attorney"
+              value={searchQuery}
+              onChange={handleSearchChange}
               className="w-full border border-[#e4e4e7] rounded-l-lg py-3 px-10 focus:outline-none"
             />
             <Search className="absolute left-3 top-3.5 text-[#a3a3a3] w-5 h-5" />
           </div>
-          <button className="bg-[#1e2e45] text-white px-6 py-3 rounded-r-lg font-medium">
+          <button
+            onClick={handleApplyFilters}
+            className="bg-[#1e2e45] text-white px-6 py-3 rounded-r-lg font-medium"
+          >
             Search
           </button>
         </div>
 
-        {/* Filters Section */}
-        <div className="bg-white border border-[#e4e4e7] rounded-lg p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Practice Areas Filter */}
+        <div className="bg-white border border-[#e4e4e7] rounded-lg p-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <h3 className="font-medium mb-3">Practice Areas</h3>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>Constitutional</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="mr-2 h-4 w-4"
-                  />
-                  <span>Civil</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>Criminal</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>Commercial</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>Labor</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>Family</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>Land</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>Investment</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>Human Rights</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Location Filter */}
-            <div>
-              <h3 className="font-medium mb-3">Location</h3>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="mr-2 h-4 w-4"
-                  />
-                  <span>Addis Ababa</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>Adama</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>Dire Dawa</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>Hawassa</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Experience Filter */}
-            <div>
-              <h3 className="font-medium mb-3">Experience</h3>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="mr-2 h-4 w-4"
-                  />
-                  <span>0-2 Years</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>2-5 Years</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>5-10 Years</span>
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 h-4 w-4" />
-                  <span>10+ Years</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Rating Filter */}
-            <div>
-              <h3 className="font-medium mb-3">Rating</h3>
-              <div className="px-2">
-                <div className="flex justify-between mb-2">
-                  <span>1</span>
-                  <span>2</span>
-                  <span>3</span>
-                  <span>4</span>
-                  <span>5</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  defaultValue="3"
-                  className="w-full h-1 bg-[#e4e4e7] rounded-lg appearance-none cursor-pointer"
-                />
-                <div className="mt-4">
-                  <label className="flex items-center">
+              <h3 className="font-medium mb-2 text-sm">Practice Areas</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {[
+                  "Constitutional",
+                  "Civil",
+                  "Criminal",
+                  "Commercial",
+                  "Labor",
+                  "Family",
+                  "Land",
+                  "Investment",
+                  "Human Rights",
+                ].map((area) => (
+                  <label key={area} className="flex items-center">
                     <input
                       type="checkbox"
-                      defaultChecked
-                      className="mr-2 h-4 w-4"
+                      checked={filters.practiceAreas.includes(area)}
+                      onChange={(e) =>
+                        handlePracticeAreaChange(area, e.target.checked)
+                      }
+                      className="mr-1.5 h-3.5 w-3.5"
                     />
-                    <span>Gives Pro bono Service</span>
+                    <span className="text-gray-600">{area}</span>
                   </label>
-                </div>
+                ))}
               </div>
+            </div>
+
+            <div>
+              <h3 className="font-medium mb-2 text-sm">Location</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {["Addis Ababa", "Adama", "Dire Dawa", "Hawassa"].map(
+                  (location) => (
+                    <label key={location} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={filters.locations.includes(location)}
+                        onChange={(e) =>
+                          handleLocationChange(location, e.target.checked)
+                        }
+                        className="mr-1.5 h-3.5 w-3.5"
+                      />
+                      <span className="text-gray-600">{location}</span>
+                    </label>
+                  )
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-medium mb-2 text-sm">Experience</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {[
+                  { label: "0-2 Years", value: "0-2" },
+                  { label: "2-5 Years", value: "2-5" },
+                  { label: "5-10 Years", value: "5-10" },
+                  { label: "10+ Years", value: "10+" },
+                ].map((exp) => (
+                  <label key={exp.value} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={filters.experience.includes(exp.value)}
+                      onChange={(e) =>
+                        handleExperienceChange(exp.value, e.target.checked)
+                      }
+                      className="mr-1.5 h-3.5 w-3.5"
+                    />
+                    <span className="text-gray-600">{exp.label}</span>
+                  </label>
+                ))}
+              </div>
+              <label className="flex items-center mt-3">
+                <input
+                  type="checkbox"
+                  checked={filters.proBonoOnly}
+                  onChange={handleProBonoChange}
+                  className="mr-1.5 h-3.5 w-3.5"
+                />
+                <span className="text-gray-600 text-sm">Pro bono Service</span>
+              </label>
             </div>
           </div>
 
-          {/* Filter Action Buttons */}
-          <div className="flex justify-end mt-6 space-x-3">
-            <button className="px-4 py-2 border border-[#e4e4e7] rounded text-sm">
-              Reset Filters
+          <div className="flex justify-end mt-4 space-x-2">
+            <button
+              onClick={handleResetFilters}
+              className="px-3 py-1.5 border border-[#e4e4e7] rounded text-xs hover:bg-gray-50"
+            >
+              Reset
             </button>
-            <button className="px-4 py-2 bg-[#1e2e45] text-white rounded text-sm">
-              Apply Filters
+            <button
+              onClick={handleApplyFilters}
+              className="px-3 py-1.5 bg-[#1e2e45] text-white rounded text-xs hover:bg-[#1e2e45]/90"
+            >
+              Apply
             </button>
           </div>
         </div>
 
-        {/* Results Overview and Sort By */}
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-[#71717a]">
-            {isLoading ? "Loading..." : `Showing ${attorneys.length} attorneys`}
+            {isLoading
+              ? "Loading..."
+              : `Showing ${filteredAttorneys.length} attorneys`}
           </p>
           <div className="flex items-center">
             <span className="text-sm mr-2">Sort by:</span>
-            <select className="border border-[#e4e4e7] rounded py-1 px-3 bg-[#f8fafc] text-sm">
-              <option>Relevance</option>
-              <option>Rating</option>
-              <option>Experience</option>
+            <select
+              className="border border-[#e4e4e7] rounded py-1 px-3 bg-[#f8fafc] text-sm"
+              onChange={handleSortChange}
+            >
+              <option value="relevance">Relevance</option>
+              <option value="rating">Rating</option>
+              <option value="experience">Experience</option>
             </select>
           </div>
         </div>
 
-        {/* Conditional Rendering for Loading, Login Prompt, Error, or No Attorneys */}
         {isLoading && (
           <div className="grid grid-cols-1 gap-6">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -352,10 +463,10 @@ export default function FindAttorney() {
           <div className="text-center text-[#71717a] mb-4">
             Please{" "}
             <Link
-              href="/login?redirect=/find-attorney"
+              href="/signin?redirect=/find-attorney"
               className="text-blue-600 underline"
             >
-              log in
+              sign in
             </Link>{" "}
             to view attorneys.
           </div>
@@ -363,14 +474,16 @@ export default function FindAttorney() {
         {error && !needsLogin && !isLoading && (
           <div className="text-red-500 text-center mb-4">{error}</div>
         )}
-        {!isLoading && attorneys.length === 0 && !error && !needsLogin && (
-          <div className="text-center text-[#71717a]">No attorneys found</div>
-        )}
+        {!isLoading &&
+          filteredAttorneys.length === 0 &&
+          !error &&
+          !needsLogin && (
+            <div className="text-center text-[#71717a]">No attorneys found</div>
+          )}
 
-        {/* Attorney List Display */}
-        {!isLoading && attorneys.length > 0 && (
+        {!isLoading && filteredAttorneys.length > 0 && (
           <div className="grid grid-cols-1 gap-6">
-            {attorneys.map((attorney) => (
+            {filteredAttorneys.map((attorney) => (
               <div
                 key={attorney.id}
                 className="bg-white border border-[#e4e4e7] rounded-lg p-6 flex flex-col md:flex-row items-center md:items-start w-full"
@@ -482,12 +595,12 @@ export default function FindAttorney() {
           </div>
         )}
       </main>
-      {/* The RequestConsultationModal component, rendered conditionally */}
+
       <RequestConsultationModal
-        attorney={selectedAttorney} // Pass the selected attorney data
-        isOpen={isModalOpen} // Control modal visibility
-        onClose={handleCloseModal} // Function to close the modal
-        authToken={authToken} // Pass the authentication token to the modal
+        attorney={selectedAttorney}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        authToken={authToken}
       />
     </div>
   );

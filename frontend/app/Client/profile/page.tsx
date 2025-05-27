@@ -24,6 +24,7 @@ const ProfilePage: React.FC = () => {
   const [otp, setOtp] = useState<string>("");
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isRequestingOtp, setIsRequestingOtp] = useState<boolean>(false); // New state for OTP request
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPasswordFields, setShowPasswordFields] = useState<boolean>(false);
@@ -60,7 +61,6 @@ const ProfilePage: React.FC = () => {
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setProfileImageFile(e.target.files[0]);
-      // Optional: Immediately show a preview of the new image
       const reader = new FileReader();
       reader.onload = (event) => {
         setProfileData((prev) => ({
@@ -87,7 +87,7 @@ const ProfilePage: React.FC = () => {
   // --- Function to upload the image to the backend ---
   const uploadImage = async (): Promise<string | null> => {
     if (!profileImageFile) {
-      return profileData.image; // No new file selected, return existing image URL
+      return profileData.image;
     }
 
     setError(null);
@@ -104,7 +104,7 @@ const ProfilePage: React.FC = () => {
 
     try {
       const response = await fetch(
-        "https://main-backend-aan1.onrender.com/api/user/uploadimage", // Your backend image upload endpoint
+        "https://main-backend-aan1.onrender.com/api/user/uploadimage",
         {
           method: "POST",
           headers: {
@@ -136,28 +136,19 @@ const ProfilePage: React.FC = () => {
 
   // --- Request OTP for Password Change ---
   const handleRequestOtp = async () => {
-    setIsSubmitting(true);
+    setIsRequestingOtp(true);
     setError(null);
     setMessage(null);
 
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      setError("Authentication token not found. Please log in.");
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      // Updated backend endpoint for requesting OTP
       const response = await fetch(
-        "https://main-backend-aan1.onrender.com/api/createotp", // <--- UPDATED BACKEND ENDPOINT
+        "https://main-backend-aan1.onrender.com/api/createotp",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // Still send token for authentication
           },
-          body: JSON.stringify({ email: profileData.email }), // Send the user's email
+          body: JSON.stringify({ email: profileData.email }),
         }
       );
 
@@ -169,12 +160,12 @@ const ProfilePage: React.FC = () => {
       setMessage("OTP sent to your email. Please check your inbox.");
       setOtpRequested(true);
       setShowPasswordFields(true);
-      setCountdown(60); // Start 60-second countdown for resend
+      setCountdown(60);
     } catch (err: any) {
       console.error("Error requesting OTP:", err);
       setError(err.message || "Error requesting OTP.");
     } finally {
-      setIsSubmitting(false);
+      setIsRequestingOtp(false);
     }
   };
 
@@ -221,9 +212,8 @@ const ProfilePage: React.FC = () => {
       }
 
       try {
-        // Backend endpoint to verify OTP and reset password
         const passwordResetResponse = await fetch(
-          "https://main-backend-aan1.onrender.com/api/user/reset-password-with-otp", // <--- NEW BACKEND ENDPOINT
+          "https://main-backend-aan1.onrender.com/api/user/reset-password-with-otp",
           {
             method: "POST",
             headers: {
@@ -252,9 +242,7 @@ const ProfilePage: React.FC = () => {
       }
     }
 
-    // Final check to see if any updates were processed, otherwise show no changes.
-    // This primarily caters to the scenario where neither image nor password was changed,
-    // or if image upload is the only action.
+    // Final check to see if any updates were processed
     if (!showPasswordFields && !profileImageFile && message === null) {
       setError("No changes detected to update.");
     }
@@ -366,11 +354,11 @@ const ProfilePage: React.FC = () => {
               type="button"
               onClick={handleRequestOtp}
               className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mt-4 ${
-                isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+                isRequestingOtp ? "opacity-70 cursor-not-allowed" : ""
               }`}
-              disabled={isSubmitting || countdown > 0}
+              disabled={isRequestingOtp || countdown > 0}
             >
-              {isSubmitting && !otpRequested ? (
+              {isRequestingOtp && !otpRequested ? (
                 <span className="flex items-center justify-center">
                   <svg
                     className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
