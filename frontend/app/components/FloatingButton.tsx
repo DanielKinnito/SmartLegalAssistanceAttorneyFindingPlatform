@@ -7,7 +7,7 @@ const FloatingButton = () => {
 
   return (
     <div className="fixed bottom-8 right-8 z-50">
-      <Link href="/AI-ChatBot" passHref>
+      <Link href="/common/AI-ChatBot" passHref>
         <button
           className="bg-[#CBB26A] hover:bg-[#bfa14e] text-white rounded-full p-4 shadow-lg transition-all duration-300 transform hover:scale-110 flex items-center gap-2"
           onMouseEnter={() => setIsHovered(true)}
