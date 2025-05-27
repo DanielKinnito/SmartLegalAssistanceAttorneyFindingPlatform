@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, FormEvent, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 
@@ -13,30 +12,15 @@ const Login: React.FC = () => {
     email: "",
     password: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false); // For login submission
+
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Forgot Password States
-  const [showForgotPassword, setShowForgotPassword] = useState<boolean>(false);
-  const [forgotEmail, setForgotEmail] = useState<string>("");
-  const [otp, setOtp] = useState<string>("");
-  const [newPassword, setNewPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
-  const [isRequestingOtp, setIsRequestingOtp] = useState<boolean>(false); // For OTP request
-  const [otpRequested, setOtpRequested] = useState<boolean>(false);
-  const [isResettingPassword, setIsResettingPassword] =
-    useState<boolean>(false); // For password reset
-  const [countdown, setCountdown] = useState<number>(0); // For OTP resend timer
-
-  // --- OTP Countdown Timer Effect ---
-  React.useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    }
-    return () => clearTimeout(timer); // Cleanup on unmount or if countdown ends
-  }, [countdown]);
+  // const handleForgotPassword = () => {
+  //   alert("Forgot password clicked!");
+  // };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -44,22 +28,6 @@ const Login: React.FC = () => {
       ...prev,
       [name]: value,
     }));
-  };
-
-  const handleForgotEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setForgotEmail(e.target.value);
-  };
-
-  const handleOtpChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setOtp(e.target.value);
-  };
-
-  const handleNewPasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setNewPassword(e.target.value);
-  };
-
-  const handleConfirmPasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setConfirmPassword(e.target.value);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -88,12 +56,17 @@ const Login: React.FC = () => {
       const data = await response.json();
       console.log("1. Login successful, received raw data:", data);
 
-      const { user, access_token } = data.data;
+      // --- CRITICAL FIX AND LOGGING ---
+      // Your backend response structure: { data: { user: { ... }, access_token: "..." } }
+      const { user, access_token } = data.data; // Destructure user and access_token
 
       if (access_token) {
         console.log("3. Condition 'if (access_token)' is TRUE.");
+
         localStorage.setItem("access_token", access_token);
-        console.log("4. Attempted to set access_token in localStorage.");
+        localStorage.setItem("userRole", data.data.user.role);
+        localStorage.setItem("userId", data.data.user.id);
+        console.log("Data data", data.data);
         const storedTokenCheck = localStorage.getItem("access_token");
         console.log(
           "5. Token in localStorage IMMEDIATELY AFTER SETTING:",
@@ -102,17 +75,19 @@ const Login: React.FC = () => {
             : "SET_FAILURE (token is null/empty)"
         );
 
+        // --- NEW: Store user details from the login response ---
         if (user) {
           localStorage.setItem("user_first_name", user.first_name || "");
           localStorage.setItem("user_last_name", user.last_name || "");
-          localStorage.setItem("user_image", user.image || "");
-          localStorage.setItem("user_email", user.email || "");
+          // 'image' field can be null, so ensure to store a string or handle null
+          localStorage.setItem("user_image", user.image || ""); // Store as empty string if null
           console.log(
-            "6. Stored user_first_name, user_last_name, user_image, user_email in localStorage."
+            "6. Stored user_first_name, user_last_name, user_image in localStorage."
           );
         } else {
           console.warn("User data not found in login response.");
         }
+        // --- END NEW ---
       } else {
         console.warn(
           "3. Condition 'if (access_token)' is FALSE. No access_token found or it was null/empty."
@@ -121,100 +96,21 @@ const Login: React.FC = () => {
           "Login successful, but no access token was provided by the server."
         );
       }
-
-      console.log("7. Redirecting to /Client...");
-      router.push("/Client");
+      // --- END CRITICAL FIX AND LOGGING ---
+      const usersRole = localStorage.getItem("userRole");
+      console.log("5. Role retrieved from localStorage:", usersRole);
+      if (usersRole && usersRole == "attorney") {
+        router.push("/Attorney/profile");
+      } else {
+        console.log("6. Redirecting to /Client...");
+        router.push("/Client");
+      }
     } catch (error) {
-      console.error("8. Login error caught in catch block:", error);
+      console.error("8. Login error caught in catch block:", error); // Changed from 7 to 8
       setError(error instanceof Error ? error.message : "Login failed");
     } finally {
       setIsSubmitting(false);
-      console.log("9. Login process finished.");
-    }
-  };
-
-  // --- Request OTP for Forgot Password ---
-  const handleRequestOtp = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsRequestingOtp(true);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        "https://main-backend-aan1.onrender.com/api/createotp",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email: forgotEmail }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to request OTP.");
-      }
-
-      setOtpRequested(true);
-      setCountdown(60);
-      setError(null);
-      setNewPassword("");
-      setConfirmPassword("");
-      setOtp("");
-    } catch (err: any) {
-      console.error("Error requesting OTP:", err);
-      setError(err.message || "Error requesting OTP.");
-    } finally {
-      setIsRequestingOtp(false);
-    }
-  };
-
-  // --- Handle Password Reset ---
-  const handlePasswordReset = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsResettingPassword(true);
-    setError(null);
-
-    if (newPassword !== confirmPassword) {
-      setError("New passwords do not match.");
-      setIsResettingPassword(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        "https://main-backend-aan1.onrender.com/api/user/reset-password-with-otp",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ otp: otp, new_password: newPassword }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to reset password.");
-      }
-
-      setError(null);
-      setShowForgotPassword(false);
-      setOtpRequested(false);
-      setForgotEmail("");
-      setOtp("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setCountdown(0);
-      alert(
-        "Password reset successfully! Please log in with your new password."
-      );
-    } catch (err: any) {
-      console.error("Error resetting password:", err);
-      setError(err.message || "Error resetting password.");
-    } finally {
-      setIsResettingPassword(false);
+      console.log("9. Login process finished."); // Changed from 8 to 9
     }
   };
 
@@ -236,248 +132,123 @@ const Login: React.FC = () => {
         </button>
       </div>
 
-      {/* Right Side - Login/Forgot Password Form */}
+      {/* Right Side - Login Form */}
       <div className="flex flex-col items-center justify-center w-full h-full bg-white rounded-l-full">
-        {!showForgotPassword ? (
-          <form
-            onSubmit={handleSubmit}
-            className="w-full flex flex-col items-center"
-          >
-            <h1 className="text-4xl font-bold text-blue-950 mb-10">Login</h1>
+        <form
+          onSubmit={handleSubmit}
+          className="w-full flex flex-col items-center"
+        >
+          <h1 className="text-4xl font-bold text-blue-950 mb-10">Login</h1>
 
-            <div className="flex flex-col justify-center m-5 w-3/5 gap-7">
-              <div className="flex flex-col items-center justify-center text-blue-950 gap-5 w-full">
+          <div className="flex flex-col justify-center m-5 w-3/5 gap-7">
+            <div className="flex flex-col items-center justify-center text-blue-950 gap-5 w-full">
+              <input
+                className="w-full px-7 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                type="email"
+                placeholder="Email"
+                name="email"
+                value={loginData.email}
+                onChange={handleChange}
+                required
+              />
+              <div className="relative w-full">
                 <input
-                  className="w-full px-7 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  type="email"
-                  placeholder="Email"
-                  name="email"
-                  value={loginData.email}
-                  onChange={handleChange}
-                  required
-                />
-                <input
-                  className="w-full px-7 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  type="password"
+                  className="w-full px-7 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   name="password"
                   value={loginData.password}
                   onChange={handleChange}
                   required
                 />
-              </div>
-            </div>
-
-            <button
-              className={`px-10 py-2 rounded-full text-white bg-blue-950 hover:bg-blue-900 transition-colors mt-5 ${
-                isSubmitting ? "opacity-70 cursor-not-allowed" : ""
-              }`}
-              type="submit"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
+                <button
+                  type="button"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-950"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
                       stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Logging in...
-                </span>
-              ) : (
-                "Login"
-              )}
-            </button>
-
-            {error && (
-              <div className="mt-4 text-red-500 text-center max-w-md">
-                {error}
-              </div>
-            )}
-
-            <div className="mt-4 text-blue-950 text-center max-w-md">
-              <button
-                type="button"
-                onClick={() => setShowForgotPassword(true)}
-                className="hover:underline"
-              >
-                Forgot password?
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="w-full flex flex-col items-center">
-            <h1 className="text-4xl font-bold text-blue-950 mb-10">
-              Forgot Password
-            </h1>
-
-            {!otpRequested ? (
-              <form
-                onSubmit={handleRequestOtp}
-                className="w-full flex flex-col items-center"
-              >
-                <div className="flex flex-col justify-center m-5 w-3/5 gap-7">
-                  <div className="flex flex-col items-center justify-center text-blue-950 gap-5 w-full">
-                    <input
-                      className="w-full px-7 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      type="email"
-                      placeholder="Enter your registered email"
-                      value={forgotEmail}
-                      onChange={handleForgotEmailChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <button
-                  className={`px-10 py-2 rounded-full text-white bg-blue-950 hover:bg-blue-900 transition-colors mt-5 ${
-                    isRequestingOtp ? "opacity-70 cursor-not-allowed" : ""
-                  }`}
-                  type="submit"
-                  disabled={isRequestingOtp || countdown > 0}
-                >
-                  {isRequestingOtp ? (
-                    <span className="flex items-center justify-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Sending OTP...
-                    </span>
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.336-3.234.938-4.675M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 3l18 18"
+                      />
+                    </svg>
                   ) : (
-                    `Request OTP ${countdown > 0 ? `(${countdown}s)` : ""}`
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-.274.822-.642 1.603-1.09 2.325M15.54 15.54A9.978 9.978 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.336-3.234.938-4.675"
+                      />
+                    </svg>
                   )}
                 </button>
-              </form>
-            ) : (
-              <form
-                onSubmit={handlePasswordReset}
-                className="w-full flex flex-col items-center"
-              >
-                <div className="flex flex-col justify-center m-5 w-3/5 gap-7">
-                  <div className="flex flex-col items-center justify-center text-blue-950 gap-5 w-full">
-                    <input
-                      className="w-full px-7 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      type="text"
-                      placeholder="Enter OTP"
-                      value={otp}
-                      onChange={handleOtpChange}
-                      required
-                    />
-                    <input
-                      className="w-full px-7 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      type="password"
-                      placeholder="New Password"
-                      value={newPassword}
-                      onChange={handleNewPasswordChange}
-                      required
-                    />
-                    <input
-                      className="w-full px-7 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      type="password"
-                      placeholder="Confirm New Password"
-                      value={confirmPassword}
-                      onChange={handleConfirmPasswordChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <button
-                  className={`px-10 py-2 rounded-full text-white bg-blue-950 hover:bg-blue-900 transition-colors mt-5 ${
-                    isResettingPassword ? "opacity-70 cursor-not-allowed" : ""
-                  }`}
-                  type="submit"
-                  disabled={isResettingPassword}
-                >
-                  {isResettingPassword ? (
-                    <span className="flex items-center justify-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Resetting...
-                    </span>
-                  ) : (
-                    "Reset Password"
-                  )}
-                </button>
-              </form>
-            )}
-
-            {error && (
-              <div className="mt-4 text-red-500 text-center max-w-md">
-                {error}
               </div>
-            )}
-
-            <div className="mt-4 text-blue-950 text-center max-w-md">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForgotPassword(false);
-                  setOtpRequested(false);
-                  setForgotEmail("");
-                  setOtp("");
-                  setNewPassword("");
-                  setConfirmPassword("");
-                  setCountdown(0);
-                  setError(null);
-                }}
-                className="hover:underline"
-              >
-                Back to Login
-              </button>
+              {/* Password strength indicator */}
             </div>
+            {/* <div className="flex items-center justify-between w-full">
+        
+        <button
+          type="button"
+          className="text-blue-950 hover:underline text-sm"
+          onClick={handleForgotPassword}
+        >
+          Forgot password?
+        </button>
+      </div> */}
           </div>
-        )}
+
+          <button
+            className={`px-10 py-2 rounded-full text-white bg-blue-950 hover:bg-blue-900 transition-colors mt-5 ${
+              isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center">
+                {/* ...spinner svg... */}
+                Logging in...
+              </span>
+            ) : (
+              "Login"
+            )}
+          </button>
+
+          {error && (
+            <div className="mt-4 text-red-500 text-center max-w-md">
+              {error}
+            </div>
+          )}
+        </form>
       </div>
     </div>
   );
