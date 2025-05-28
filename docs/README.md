@@ -7,7 +7,6 @@ A comprehensive platform connecting clients with attorneys and providing AI-powe
 - **Attorney Matching**: Find attorneys based on specialization, location, and availability
 - **Client Portal**: Manage cases, documents, and communications
 - **AI Legal Chatbot**: Get preliminary legal guidance and information
-- **Document Generation**: Create legal documents using customizable templates
 - **Secure Authentication**: Multi-factor authentication and OAuth integration
 - **Activity Tracking**: Monitor user activities for security and compliance
 

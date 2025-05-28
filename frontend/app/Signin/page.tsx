@@ -16,7 +16,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { nam+e, value } = e.target;
+    const { name, value } = e.target;
     setLoginData(prev => ({
       ...prev,
       [name]: value
@@ -29,7 +29,6 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      // Mock login API call
       const response = await fetch('https://jsonplaceholder.typicode.com/users', {
         method: 'POST',
         headers: {
