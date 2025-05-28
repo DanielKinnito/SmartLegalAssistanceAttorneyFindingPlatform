@@ -29,7 +29,7 @@ Make sure:
 
 1. **Test your connection locally first**:
    ```
-   python test_supabase_connection.py
+   python utils/test_supabase_connection.py
    ```
 
 2. **Set the correct environment variables on Render.com**:
@@ -43,7 +43,7 @@ Make sure:
 
 4. **Check the logs**:
    - If you still see issues, run the debug script on your server: 
-   - Add this to your startup script: `python debug_database_url.py`
+   - Add this to your startup script: `python utils/debug_database_url.py`
    - Check the logs for formatting issues in your DATABASE_URL
 
 ## Testing the Connection
@@ -51,7 +51,7 @@ Make sure:
 To test if your database connection is working properly, run:
 
 ```
-python debug_database_url.py
+python utils/debug_database_url.py
 ```
 
 This will analyze your DATABASE_URL and identify any formatting issues.
@@ -99,4 +99,4 @@ If your schema doesn't exist or is incomplete:
    ```
 
 3. **Check schema compatibility**:
-   Make sure your models match the existing schema in Supabase. 
+   Make sure your models match the existing schema in Supabase.
