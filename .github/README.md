@@ -7,9 +7,10 @@ This directory contains GitHub Actions workflows that automate various processes
 - **Frontend:** Next.js, Tailwind CSS  
 - **Backend:** Django (see the `main-backend` branch)
 
-## 🌐 Backend Deployment
-The backend is deployed and available at:  
-👉 [https://main-backend-aan1.onrender.com](https://main-backend-aan1.onrender.com)
+## 📬 API Documentation
+You can explore and test the full API using the Postman documentation below:  
+🔗 [Smart Legal Assistance API – Postman Docs](https://documenter.getpostman.com/view/34526223/2sB2qZFNbW)
+
 
 > 🔁 **Note:** The backend code is located on a separate branch named `main-backend`.
 
