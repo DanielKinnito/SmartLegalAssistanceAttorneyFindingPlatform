@@ -1,4 +1,4 @@
-# GitHub Workflows for Smart Legal Assistance Platform
+# Smart Legal Assistance Platform
 
 This directory contains GitHub Actions workflows that automate various processes for the Smart Legal Assistance Platform.
 
@@ -6,6 +6,10 @@ This directory contains GitHub Actions workflows that automate various processes
 
 - **Frontend:** Next.js, Tailwind CSS  
 - **Backend:** Django (see the `main-backend` branch)
+
+## 🌐 Backend Deployment
+The backend is deployed and available at:  
+👉 [https://main-backend-aan1.onrender.com](https://main-backend-aan1.onrender.com)
 
 > 🔁 **Note:** The backend code is located on a separate branch named `main-backend`.
 
